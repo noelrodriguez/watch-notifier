@@ -64,13 +64,16 @@ function buildSourceCheckboxes() {
   const group = document.getElementById('source-group');
   group.innerHTML = sources
     .map(
-      (s) => `
+      (s) => {
+        const safe = escapeHtml(s);
+        return `
     <label class="checkbox-row">
       <span class="checkbox-box checked">
-        <input type="checkbox" class="source-checkbox" value="${s}" checked>
+        <input type="checkbox" class="source-checkbox" value="${safe}" checked>
       </span>
-      <span class="checkbox-text">${s}</span>
-    </label>`
+      <span class="checkbox-text">${safe}</span>
+    </label>`;
+      }
     )
     .join('');
 
@@ -128,7 +131,7 @@ function applyFilters(deals, f) {
     if (f.size  && String(d.size_mm) !== f.size)  return false;
     if (f.dial  && d.dial  !== f.dial)  return false;
     if (f.strap && d.strap !== f.strap) return false;
-    if (f.sources.length && !f.sources.includes(d.source)) return false;
+    if (!f.sources.includes(d.source)) return false;
     if (f.dateRange) {
       const cutoff = dateCutoff(f.dateRange);
       if (cutoff && (!d.date_seen || new Date(d.date_seen) < cutoff)) return false;
@@ -184,9 +187,9 @@ function render() {
       const dialStr  = d.dial
         ? `${capitalize(d.dial)} · ${capitalize(d.strap || '')}`
         : '—';
-      const safeUrl  = encodeURI(d.url || '#');
-      const safeTitle = (d.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      return `<tr${rowCls} onclick="window.open('${safeUrl}','_blank')">
+      const safeUrl  = escapeHtml(d.url || '');
+      const safeTitle = escapeHtml(d.title || '');
+      return `<tr${rowCls} data-url="${safeUrl}">
         <td>${d.is_hot ? '<span class="hot-badge">🔥</span>' : ''}</td>
         <td class="price-cell ${priceCls}">${price}</td>
         <td class="title-cell" title="${safeTitle}">${escapeHtml(d.title || '—')}</td>
@@ -253,6 +256,13 @@ function setupListeners() {
       if (id === 'brand-select') updateModelDropdown();
       render();
     });
+  });
+
+  document.getElementById('deals-tbody').addEventListener('click', (e) => {
+    const row = e.target.closest('tr[data-url]');
+    if (!row) return;
+    const url = row.dataset.url;
+    if (url && /^https?:\/\//i.test(url)) window.open(url, '_blank');
   });
 
   document.getElementById('clear-btn').addEventListener('click', () => {
