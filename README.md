@@ -10,13 +10,13 @@ your phone via **[ntfy](https://ntfy.sh)**. Runs free on **GitHub Actions** — 
 GitHub Actions (hourly cron)
   └─ python watch_monitor.py
        ├─ scan sources  → filter to relevant listings
-       ├─ dedup against monitor_state.json (committed back each run)
+       ├─ dedup against data/monitor_state.json (committed back each run)
        └─ push NEW listings to your ntfy topic → phone
 ```
 
 - New listings only — the first run seeds a silent baseline, then you're alerted on genuinely new drops.
 - Anything **≤ $2,000** gets a 🔥 high-priority push.
-- Dedup state lives in `monitor_state.json`, which the workflow commits back after each run (this also keeps the repo active so GitHub won't auto-disable the schedule).
+- Dedup state lives in `data/monitor_state.json`, which the workflow commits back after each run (this also keeps the repo active so GitHub won't auto-disable the schedule).
 
 ## Setup
 
@@ -34,7 +34,7 @@ Full step-by-step (secrets, permissions, testing) is in **[GITHUB_ACTIONS_SETUP.
 | `watch_monitor.py` | The monitor (config knobs at top; `--test` sends a sample push) |
 | `requirements.txt` | Python deps (`requests`, `beautifulsoup4`) |
 | `.github/workflows/monitor.yml` | Hourly schedule + manual test button + state commit |
-| `monitor_state.json` | Auto-created dedup memory (tracked in git on purpose) |
+| `data/monitor_state.json` | Auto-created dedup memory (tracked in git on purpose) |
 | `GITHUB_ACTIONS_SETUP.md` | Detailed setup + troubleshooting |
 | `HANDOFF_SUMMARY.md` | Project context / decision log |
 | `requested_watches.md` | Tracked watch preferences |

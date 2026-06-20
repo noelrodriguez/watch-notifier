@@ -70,6 +70,7 @@ def load_state():
 
 
 def save_state(seen_ids):
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     STATE_FILE.write_text(json.dumps(
         {"updated": datetime.now(timezone.utc).isoformat(),
          "seen_ids": sorted(seen_ids)}, indent=2))

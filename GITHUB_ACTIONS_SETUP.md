@@ -20,7 +20,7 @@ your-repo/
 ```
 
 Optional (nice to have, not required by the Action):
-- `monitor_state.json` — copy your **local** one if you want to carry over dedup
+- `data/monitor_state.json` — copy your **local** one if you want to carry over dedup
   history so the cloud run doesn't re-alert on listings you've already seen. If you
   don't copy it, the first cloud run just seeds a fresh baseline silently.
 - `README.md`, `HANDOFF_SUMMARY.md`, `requested_watches.md` — for context.
@@ -58,7 +58,7 @@ thing keeping others out, so don't publish it.)
 - Save.
 
 ### 2. Give the workflow permission to push state back
-The job commits `monitor_state.json` back to the repo each run. That needs write access.
+The job commits `data/monitor_state.json` back to the repo each run. That needs write access.
 - Repo → **Settings** → **Actions** → **General** → scroll to **Workflow permissions**
 - Select **Read and write permissions** → **Save**.
 - (If this is left on read-only, the run still scans and pushes alerts fine, but the

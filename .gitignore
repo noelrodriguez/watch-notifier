@@ -1,6 +1,7 @@
 # --- Watch Tracker ---
-# NOTE: monitor_state.json is intentionally NOT ignored — the GitHub Action
-# commits it back each run to persist dedup memory across runs.
+# NOTE: data/monitor_state.json and data/deals.json are intentionally NOT
+# ignored — the GitHub Action commits them back each run to persist dedup
+# memory and deal history across runs.
 
 # Local run logs
 *.log

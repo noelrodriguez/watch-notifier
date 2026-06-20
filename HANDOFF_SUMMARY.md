@@ -67,7 +67,7 @@ Build a system that monitors key secondary markets for buying watches. Determine
 
 ## 5. The monitoring system — architecture & files
 
-**How it works:** Run once per invocation → scan sources → dedupe against `monitor_state.json` → push only genuinely-new listings to ntfy → phone. Schedule hourly with Task Scheduler.
+**How it works:** Run once per invocation → scan sources → dedupe against `data/monitor_state.json` → push only genuinely-new listings to ntfy → phone. Schedule hourly with Task Scheduler.
 
 **Sources & reliability:**
 
@@ -86,7 +86,8 @@ Build a system that monitors key secondary markets for buying watches. Determine
 | `README.md` | Full setup + Windows Task Scheduler instructions |
 | `requested_watches.md` | Log of watches Noel has asked about + inferred preferences |
 | `seen_listings.json` | Baseline of listings already surfaced (manual notes from this session) |
-| `monitor_state.json` | **Auto-created by the script** on first run — dedup memory. Not present yet. |
+| `data/monitor_state.json` | **Auto-created by the script** on first run — dedup memory. Not present yet. |
+| `data/deals.json` | **Auto-created by the script** — deal history tracking. Not present yet. |
 | `HANDOFF_SUMMARY.md` | This file |
 
 **Verified this session:** price parsing, relevance filter, dedup logic (unit tests pass), syntax clean, `--test` guard works. **Not yet verified:** a live ntfy push (sandbox blocks outbound HTTP) — this is the first thing to confirm on the new PC via `--test`.
