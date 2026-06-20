@@ -58,3 +58,85 @@ def test_api_watches_returns_contents(client, tmp_path):
     with patch("app.DATA_DIR", tmp_path):
         r = client.get("/api/watches")
     assert json.loads(r.data) == watches
+
+
+VALID_WATCH = {
+    "brand": "Rolex",
+    "model": "Submariner Date",
+    "size_mm": 41,
+    "search_terms": ["rolex submariner date"],
+    "refs": [{"ref": "126610LN", "dial": "black", "strap": "bracelet"}],
+    "price_ceiling": 15000,
+}
+
+
+def test_create_watch_valid(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=VALID_WATCH)
+    assert r.status_code == 201
+    body = json.loads(r.data)
+    assert body["id"] == "rolex-submariner-date"
+    assert body["relevance_required_all"] == [["rolex", "submariner", "date"]]
+
+
+def test_create_watch_missing_field(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    bad = {k: v for k, v in VALID_WATCH.items() if k != "size_mm"}
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=bad)
+    assert r.status_code == 400
+    assert "error" in json.loads(r.data)
+
+
+def test_create_watch_no_valid_ref(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    bad = {**VALID_WATCH, "refs": [{"ref": "X", "dial": "", "strap": "bracelet"}]}
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=bad)
+    assert r.status_code == 400
+
+
+def test_create_watch_duplicate_id(client, tmp_path):
+    existing = [{"id": "rolex-submariner-date", "brand": "Rolex",
+                 "model": "Submariner Date"}]
+    (tmp_path / "watches.json").write_text(json.dumps(existing))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=VALID_WATCH)
+    assert r.status_code == 409
+
+
+def test_update_watch(client, tmp_path):
+    existing = [{"id": "rolex-submariner-date", "brand": "Rolex",
+                 "model": "Submariner Date", "size_mm": 41,
+                 "refs": [{"ref": "126610LN", "dial": "black", "strap": "bracelet"}]}]
+    (tmp_path / "watches.json").write_text(json.dumps(existing))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.put("/api/watches/rolex-submariner-date",
+                       json={**VALID_WATCH, "price_ceiling": 12000})
+    assert r.status_code == 200
+    saved = json.loads((tmp_path / "watches.json").read_text())
+    assert saved[0]["price_ceiling"] == 12000
+
+
+def test_update_watch_unknown_id(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.put("/api/watches/nope", json=VALID_WATCH)
+    assert r.status_code == 404
+
+
+def test_delete_watch(client, tmp_path):
+    existing = [{"id": "rolex-submariner-date", "brand": "Rolex"}]
+    (tmp_path / "watches.json").write_text(json.dumps(existing))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.delete("/api/watches/rolex-submariner-date")
+    assert r.status_code == 200
+    assert json.loads((tmp_path / "watches.json").read_text()) == []
+
+
+def test_delete_watch_unknown_id(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.delete("/api/watches/nope")
+    assert r.status_code == 404
