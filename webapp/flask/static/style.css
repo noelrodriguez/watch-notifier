@@ -262,3 +262,49 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
   font-size: 13px;
   letter-spacing: 0.5px;
 }
+
+/* ── Watches view ── */
+.subtitle { color: #777; }
+.view-nav { display: flex; gap: 8px; margin-left: auto; }
+.nav-btn { background: transparent; color: #888; border: 1px solid #222;
+  padding: 6px 14px; cursor: pointer; border-radius: 4px; }
+.nav-btn.active { color: #c9a84c; border-color: #c9a84c; }
+#watches-view { padding: 20px 28px; }
+.watches-header { display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; }
+#add-watch-btn { background: #c9a84c; color: #07070d; border: none;
+  padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+.watch-row { display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; border-bottom: 1px solid #161620; }
+.watch-name { color: #c9a84c; }
+.watch-sub { color: #777; font-size: 0.85em; margin-left: 8px; }
+.watch-actions button { background: transparent; color: #aaa; border: 1px solid #333;
+  margin-left: 6px; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+.push-banner { display: flex; justify-content: space-between; align-items: center;
+  background: #2a2410; border: 1px solid #c9a84c; color: #e7d6a0;
+  padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; }
+#push-btn { background: #c9a84c; color: #07070d; border: none; padding: 6px 12px;
+  border-radius: 4px; cursor: pointer; font-weight: 600; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  align-items: center; justify-content: center; z-index: 50; }
+.modal-card { background: #0d0d16; border: 1px solid #222; padding: 22px;
+  border-radius: 8px; width: 460px; max-height: 86vh; overflow-y: auto; }
+.modal-card h3 { color: #c9a84c; margin-top: 0; }
+.modal-card label { display: block; margin: 8px 0; color: #aaa; }
+.modal-card input, .modal-card textarea { width: 100%; background: #07070d;
+  border: 1px solid #333; color: #e7e7ea; padding: 6px; border-radius: 4px;
+  box-sizing: border-box; }
+.refs-section { margin: 12px 0; }
+.ref-row { display: flex; gap: 6px; margin-bottom: 6px; }
+#add-ref-btn { background: transparent; color: #c9a84c; border: 1px dashed #555;
+  padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+#watch-cancel { background: transparent; color: #aaa; border: 1px solid #333;
+  padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+#watch-save { background: #c9a84c; color: #07070d; border: none; padding: 8px 16px;
+  border-radius: 4px; cursor: pointer; font-weight: 600; }
+.form-error { background: #3a1414; border: 1px solid #a33; color: #f1b0b0;
+  padding: 8px; border-radius: 4px; margin-bottom: 10px; }
+.advanced summary { cursor: pointer; color: #c9a84c; margin: 10px 0; }
+.label { color: #888; font-size: 0.85em; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px; }

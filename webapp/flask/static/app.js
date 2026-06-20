@@ -285,5 +285,166 @@ function setupListeners() {
 /* ── Boot ── */
 document.addEventListener('DOMContentLoaded', () => {
   setupListeners();
+  setupWatchesListeners();
   fetchData();
 });
+
+/* ── Watches view ── */
+let allWatches = [];
+
+async function fetchWatches() {
+  const res = await fetch('/api/watches');
+  allWatches = await res.json();
+  renderWatches();
+  refreshStatus();
+}
+
+function renderWatches() {
+  document.getElementById('watch-count').textContent = allWatches.length;
+  document.getElementById('watches-list').innerHTML = allWatches.map((w) => `
+    <div class="watch-row">
+      <div class="watch-meta">
+        <span class="watch-name">${escapeHtml(w.brand)} · ${escapeHtml(w.model)}</span>
+        <span class="watch-sub">${w.size_mm ? w.size_mm + 'mm' : '—'} ·
+          ${(w.refs || []).length} ref(s) ·
+          ${w.price_ceiling ? '$' + w.price_ceiling : 'no ceiling'}</span>
+      </div>
+      <div class="watch-actions">
+        <button data-edit="${escapeHtml(w.id)}">Edit</button>
+        <button data-del="${escapeHtml(w.id)}">Delete</button>
+      </div>
+    </div>`).join('') || '<p class="subtitle">No watches yet.</p>';
+
+  document.querySelectorAll('[data-edit]').forEach((b) =>
+    b.addEventListener('click', () => openWatchForm(b.dataset.edit)));
+  document.querySelectorAll('[data-del]').forEach((b) =>
+    b.addEventListener('click', () => deleteWatch(b.dataset.del)));
+}
+
+function refRowHtml(ref = {}) {
+  return `<div class="ref-row">
+    <input class="ref-ref" placeholder="Ref" value="${escapeHtml(ref.ref || '')}">
+    <input class="ref-dial" placeholder="Dial" value="${escapeHtml(ref.dial || '')}">
+    <input class="ref-strap" placeholder="Strap" value="${escapeHtml(ref.strap || '')}">
+  </div>`;
+}
+
+function openWatchForm(id) {
+  const w = allWatches.find((x) => x.id === id);
+  document.getElementById('watch-modal-title').textContent = w ? 'Edit Watch' : 'Add Watch';
+  document.getElementById('form-error').style.display = 'none';
+  document.getElementById('f-id').value = w ? w.id : '';
+  document.getElementById('f-brand').value = w ? w.brand : '';
+  document.getElementById('f-model').value = w ? w.model : '';
+  document.getElementById('f-size').value = w ? (w.size_mm || '') : '';
+  document.getElementById('f-ceiling').value = w ? (w.price_ceiling || '') : '';
+  document.getElementById('f-notes').value = w ? (w.notes || '') : '';
+  document.getElementById('f-search-terms').value =
+    w && w.search_terms ? w.search_terms.join('\n') : '';
+  document.getElementById('f-relevance').value =
+    w && w.relevance_required_all
+      ? w.relevance_required_all.map((g) => g.join(', ')).join('\n') : '';
+  const rows = (w && w.refs && w.refs.length) ? w.refs : [{}];
+  document.getElementById('refs-rows').innerHTML = rows.map(refRowHtml).join('');
+  document.getElementById('watch-modal').style.display = 'flex';
+}
+
+function collectForm() {
+  const refs = [...document.querySelectorAll('.ref-row')].map((r) => ({
+    ref: r.querySelector('.ref-ref').value.trim(),
+    dial: r.querySelector('.ref-dial').value.trim(),
+    strap: r.querySelector('.ref-strap').value.trim(),
+  })).filter((r) => r.ref || r.dial || r.strap);
+  const terms = document.getElementById('f-search-terms').value
+    .split('\n').map((s) => s.trim()).filter(Boolean);
+  const rel = document.getElementById('f-relevance').value
+    .split('\n').map((line) => line.split(',').map((s) => s.trim().toLowerCase())
+      .filter(Boolean)).filter((g) => g.length);
+  const size = parseInt(document.getElementById('f-size').value, 10);
+  const ceiling = parseInt(document.getElementById('f-ceiling').value, 10);
+  return {
+    brand: document.getElementById('f-brand').value.trim(),
+    model: document.getElementById('f-model').value.trim(),
+    size_mm: Number.isNaN(size) ? null : size,
+    price_ceiling: Number.isNaN(ceiling) ? null : ceiling,
+    notes: document.getElementById('f-notes').value.trim(),
+    refs,
+    search_terms: terms,
+    relevance_required_all: rel,
+  };
+}
+
+async function saveWatch() {
+  const id = document.getElementById('f-id').value;
+  const payload = collectForm();
+  const res = await fetch(id ? `/api/watches/${id}` : '/api/watches', {
+    method: id ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    const el = document.getElementById('form-error');
+    el.textContent = err.error || 'Save failed';
+    el.style.display = 'block';
+    return;
+  }
+  document.getElementById('watch-modal').style.display = 'none';
+  fetchWatches();
+}
+
+async function deleteWatch(id) {
+  if (!confirm('Delete this watch?')) return;
+  await fetch(`/api/watches/${id}`, { method: 'DELETE' });
+  fetchWatches();
+}
+
+/* ── Push banner ── */
+async function refreshStatus() {
+  let s;
+  try { s = await (await fetch('/api/status')).json(); } catch { return; }
+  const banner = document.getElementById('push-banner');
+  if (s.needs_push) {
+    document.getElementById('push-banner-text').textContent =
+      '⚠ Unsaved changes — not yet monitoring.';
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function pushChanges() {
+  const btn = document.getElementById('push-btn');
+  btn.disabled = true;
+  const res = await fetch('/api/push', { method: 'POST' });
+  const body = await res.json();
+  btn.disabled = false;
+  if (body.ok) {
+    refreshStatus();
+  } else {
+    document.getElementById('push-banner-text').textContent =
+      'Push failed: ' + (body.error || 'unknown error');
+  }
+}
+
+function setupWatchesListeners() {
+  document.querySelectorAll('.nav-btn').forEach((b) =>
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.nav-btn').forEach((x) => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('deals-view').style.display =
+        b.dataset.view === 'deals-view' ? 'block' : 'none';
+      document.getElementById('watches-view').style.display =
+        b.dataset.view === 'watches-view' ? 'block' : 'none';
+      if (b.dataset.view === 'watches-view') fetchWatches();
+    }));
+  document.getElementById('add-watch-btn').addEventListener('click', () => openWatchForm(null));
+  document.getElementById('add-ref-btn').addEventListener('click', () => {
+    document.getElementById('refs-rows').insertAdjacentHTML('beforeend', refRowHtml());
+  });
+  document.getElementById('watch-cancel').addEventListener('click', () => {
+    document.getElementById('watch-modal').style.display = 'none';
+  });
+  document.getElementById('watch-save').addEventListener('click', saveWatch);
+  document.getElementById('push-btn').addEventListener('click', pushChanges);
+}
