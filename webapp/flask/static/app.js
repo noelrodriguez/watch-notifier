@@ -293,8 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
 let allWatches = [];
 
 async function fetchWatches() {
-  const res = await fetch('/api/watches');
-  allWatches = await res.json();
+  try {
+    const res = await fetch('/api/watches');
+    allWatches = await res.json();
+  } catch (e) {
+    document.getElementById('watches-list').innerHTML =
+      '<p class="subtitle">Failed to load watches.</p>';
+    return;
+  }
   renderWatches();
   refreshStatus();
 }
@@ -305,9 +311,9 @@ function renderWatches() {
     <div class="watch-row">
       <div class="watch-meta">
         <span class="watch-name">${escapeHtml(w.brand)} · ${escapeHtml(w.model)}</span>
-        <span class="watch-sub">${w.size_mm ? w.size_mm + 'mm' : '—'} ·
+        <span class="watch-sub">${w.size_mm ? escapeHtml(String(w.size_mm)) + 'mm' : '—'} ·
           ${(w.refs || []).length} ref(s) ·
-          ${w.price_ceiling ? '$' + w.price_ceiling : 'no ceiling'}</span>
+          ${w.price_ceiling ? '$' + escapeHtml(String(w.price_ceiling)) : 'no ceiling'}</span>
       </div>
       <div class="watch-actions">
         <button data-edit="${escapeHtml(w.id)}">Edit</button>
@@ -330,7 +336,7 @@ function refRowHtml(ref = {}) {
 }
 
 function openWatchForm(id) {
-  const w = allWatches.find((x) => x.id === id);
+  const w = allWatches.find((x) => String(x.id) === id);
   document.getElementById('watch-modal-title').textContent = w ? 'Edit Watch' : 'Add Watch';
   document.getElementById('form-error').style.display = 'none';
   document.getElementById('f-id').value = w ? w.id : '';
@@ -395,7 +401,12 @@ async function saveWatch() {
 
 async function deleteWatch(id) {
   if (!confirm('Delete this watch?')) return;
-  await fetch(`/api/watches/${id}`, { method: 'DELETE' });
+  const res = await fetch(`/api/watches/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert('Delete failed: ' + (err.error || res.status));
+    return;
+  }
   fetchWatches();
 }
 
