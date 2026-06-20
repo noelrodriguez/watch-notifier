@@ -41,8 +41,10 @@ Full step-by-step (secrets, permissions, testing) is in **[GITHUB_ACTIONS_SETUP.
 
 ## Tuning
 
-Edit the constants at the top of `watch_monitor.py`: `SEARCH_TERMS`, `PRICE_ALERT_CEILING`,
-`RELEVANCE_REQUIRED_ALL`, `PREFERRED_SIGNALS`, `MAX_PUSH_PER_RUN`.
+Watches are configured in `data/watches.json` — each entry has `brand`, `model`, `size_mm`,
+`search_terms`, `relevance_required_all`, `refs`, and `price_ceiling`. Edit the file directly or
+use the **Watches** tab in the web app. The only monitor-level knob that stays in `watch_monitor.py`
+is `MAX_PUSH_PER_RUN`.
 
 ## Caveats
 

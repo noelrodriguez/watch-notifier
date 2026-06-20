@@ -103,7 +103,7 @@ def tag_deal(item, registry):
                 item["dial"] = matched_refs[0].get("dial")
                 item["strap"] = matched_refs[0].get("strap")
 
-            ceiling = entry.get("price_ceiling", float("inf"))
+            ceiling = entry.get("price_ceiling") or float("inf")
             item["is_hot"] = item.get("price") is not None and item["price"] <= ceiling
             break
 

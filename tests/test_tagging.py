@@ -161,3 +161,22 @@ def test_is_relevant_rejects_partial():
 
 def test_is_relevant_empty_groups_is_false():
     assert is_relevant("anything at all", []) is False
+
+
+def test_tag_no_ceiling_does_not_crash():
+    registry = [{
+        "brand": "Omega", "model": "Speedmaster", "size_mm": 42,
+        "search_terms": ["omega speedmaster"],
+        "refs": [{"ref": "310.30", "dial": "black", "strap": "bracelet"}],
+        "price_ceiling": None,
+    }]
+    item = {
+        "id": "reddit:xyz",
+        "title": "Omega Speedmaster 42mm",
+        "price": 5000,
+        "url": "https://reddit.com/r/Watchexchange/comments/xyz",
+        "source": "r/watchexchange",
+    }
+    result = tag_deal(item, registry)  # must not raise
+    assert result["brand"] == "Omega"
+    assert result["is_hot"] is True  # no ceiling = infinite ceiling, priced item qualifies
