@@ -143,7 +143,7 @@ body {
 .checkbox-box.checked { background: #c9a84c22; border-color: #c9a84c88; }
 .checkbox-box.checked::after { content: '✓'; color: #c9a84c; font-size: 10px; line-height: 1; }
 .checkbox-text { font-size: 12px; color: #c0b89a; user-select: none; }
-.checkbox-row input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+.checkbox-row input[type="checkbox"] { position: absolute; opacity: 0; }
 
 /* ── Clear button ── */
 .clear-btn {
