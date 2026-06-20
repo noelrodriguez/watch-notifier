@@ -42,12 +42,12 @@ if ! kill -0 "$STREAMLIT_PID" 2>/dev/null; then
 fi
 
 echo "==> Opening browsers..."
-open "http://localhost:5000"
-open "http://localhost:8501"
+open "http://127.0.0.1:5000"
+open "http://127.0.0.1:8501"
 
 echo ""
 echo "Both apps are running:"
-echo "  Flask      http://localhost:5000   (logs: webapp/flask/flask.log)"
-echo "  Streamlit  http://localhost:8501   (logs: webapp/streamlit/streamlit.log)"
+echo "  Flask      http://127.0.0.1:5000   (logs: webapp/flask/flask.log)"
+echo "  Streamlit  http://127.0.0.1:8501   (logs: webapp/streamlit/streamlit.log)"
 echo ""
 echo "To stop: kill $( lsof -ti:5000 ) $( lsof -ti:8501 )"
