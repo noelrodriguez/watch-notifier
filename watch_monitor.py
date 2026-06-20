@@ -262,7 +262,7 @@ def run_test_push():
         "id": "test:sample",
         "title": "TEST — Longines Master Chrono Moonphase 40mm L2.673.4.78.6, box & papers",
         "price": 1750,
-        "url": "https://www.reddit.com/r/Watchexchange/",
+        "url": "https://www.reddit.com/r/Watchexchange/comments/1to9v9y/wts_longines_master_collection_triple_calendar/",
         "source": "self-test",
     }
     ok = push_ntfy(sample)
