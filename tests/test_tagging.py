@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from watch_monitor import tag_deal, save_deals, slugify, size_signals
+from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant
 
 REGISTRY = [
     {
@@ -147,3 +147,17 @@ def test_tag_preferred_signals_from_size():
     item = {**BASE_ITEM, "title": "Longines Master Moonphase 40mm bracelet"}
     result = tag_deal(item, REGISTRY)
     assert result["preferred_signals"] == ["40mm"]
+
+
+def test_is_relevant_matches_group():
+    groups = [["longines", "master", "moon"]]
+    assert is_relevant("Longines Master Moonphase 40mm", groups) is True
+
+
+def test_is_relevant_rejects_partial():
+    groups = [["longines", "master", "moon"]]
+    assert is_relevant("Longines Master Collection (no complication)", groups) is False
+
+
+def test_is_relevant_empty_groups_is_false():
+    assert is_relevant("anything at all", []) is False
