@@ -9,7 +9,7 @@ FLASK_LOG="$FLASK_DIR/flask.log"
 STREAMLIT_LOG="$SCRIPT_DIR/streamlit/streamlit.log"
 
 echo "==> Installing dependencies..."
-pip install flask streamlit pandas --quiet
+python3 -m pip install flask streamlit pandas --quiet
 
 echo "==> Stopping any existing instances..."
 lsof -ti:5000 | xargs kill -9 2>/dev/null || true
