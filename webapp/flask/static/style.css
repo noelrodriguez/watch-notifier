@@ -1,0 +1,264 @@
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #07070d;
+  color: #e0d9cc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.app-header {
+  background: #0a0a12;
+  border-bottom: 1px solid #1e1e2e;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.app-title {
+  color: #c9a84c;
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.app-meta { font-size: 11px; color: #444; }
+.app-meta span { color: #c9a84c; }
+
+/* ── Layout ── */
+.layout {
+  display: flex;
+  height: calc(100vh - 49px);
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #09090f;
+  border-right: 1px solid #1a1a28;
+  padding: 20px 16px;
+  overflow-y: auto;
+}
+
+.filter-section { margin-bottom: 22px; }
+
+.filter-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #c9a84c;
+  margin-bottom: 8px;
+}
+
+.filter-select {
+  width: 100%;
+  background: #111120;
+  border: 1px solid #252535;
+  color: #c0b89a;
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 4px;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+.filter-select:focus { border-color: #c9a84c44; }
+
+/* ── Price range ── */
+.price-row { display: flex; gap: 6px; align-items: center; }
+.price-input {
+  flex: 1;
+  background: #111120;
+  border: 1px solid #252535;
+  color: #c0b89a;
+  font-size: 12px;
+  padding: 7px 8px;
+  border-radius: 4px;
+  width: 100%;
+  outline: none;
+}
+.price-input::placeholder { color: #333; }
+.price-input:focus { border-color: #c9a84c44; }
+.price-sep { color: #444; font-size: 11px; }
+
+/* ── Toggle ── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.toggle-label { font-size: 12px; color: #c0b89a; }
+
+.toggle {
+  width: 34px;
+  height: 20px;
+  background: #1a1a28;
+  border: 1px solid #2a2a3a;
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  padding: 0;
+}
+.toggle.active {
+  background: #1a2a1a;
+  border-color: #2a4a2a;
+}
+.toggle-dot {
+  width: 14px;
+  height: 14px;
+  background: #333;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s, background 0.2s;
+}
+.toggle.active .toggle-dot {
+  left: 16px;
+  background: #5db85d;
+}
+
+/* ── Source checkboxes ── */
+.checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.checkbox-box {
+  width: 16px;
+  height: 16px;
+  background: #111120;
+  border: 1px solid #252535;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.checkbox-box.checked { background: #c9a84c22; border-color: #c9a84c88; }
+.checkbox-box.checked::after { content: '✓'; color: #c9a84c; font-size: 10px; line-height: 1; }
+.checkbox-text { font-size: 12px; color: #c0b89a; user-select: none; }
+.checkbox-row input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ── Clear button ── */
+.clear-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #252535;
+  color: #555;
+  font-size: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: border-color 0.15s, color 0.15s;
+}
+.clear-btn:hover { border-color: #c9a84c44; color: #c9a84c; }
+
+/* ── Main content ── */
+.main { flex: 1; overflow: auto; }
+
+/* ── Toolbar ── */
+.toolbar {
+  padding: 12px 20px;
+  border-bottom: 1px solid #141420;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #09090f;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.result-count { font-size: 11px; color: #444; }
+.result-count span { color: #c9a84c; }
+
+.sort-row { display: flex; gap: 8px; align-items: center; }
+.sort-label { font-size: 10px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
+.sort-select {
+  background: #111120;
+  border: 1px solid #252535;
+  color: #888;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ── Table ── */
+.table-wrap { padding: 0 20px 40px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+thead th {
+  padding: 10px 12px 10px 0;
+  color: #c9a84c;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid #1e1e2e;
+}
+
+tbody tr {
+  border-bottom: 1px solid #0f0f1a;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+tbody tr:hover { background: #111120; }
+tbody tr.hot { border-left: 2px solid #5db85d; }
+tbody tr.hot td:first-child { padding-left: 10px; }
+
+td { padding: 9px 12px 9px 0; vertical-align: middle; }
+
+.price-cell { font-weight: 600; white-space: nowrap; }
+.price-hot  { color: #5db85d; }
+.price-ok   { color: #c0b89a; }
+.price-none { color: #444; }
+
+.hot-badge { font-size: 14px; line-height: 1; }
+
+.title-cell {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #d0c9bc;
+}
+
+.brand-cell { color: #c9a84c; white-space: nowrap; font-size: 11px; }
+.model-cell { color: #9a9282; font-size: 11px; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.ref-cell   { font-family: 'Menlo', 'Courier New', monospace; font-size: 10px; color: #665d4a; white-space: nowrap; }
+.dial-cell  { font-size: 11px; color: #8a8070; white-space: nowrap; }
+.age-cell   { font-size: 11px; color: #444; white-space: nowrap; }
+
+.source-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+  display: inline-block;
+}
+.source-reddit { background: #1a1520; color: #9c7fc0; border: 1px solid #2a2035; }
+.source-ebay   { background: #1a1820; color: #7c9fc0; border: 1px solid #202835; }
+.source-chrono { background: #201a10; color: #c09a50; border: 1px solid #352810; }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #333;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}

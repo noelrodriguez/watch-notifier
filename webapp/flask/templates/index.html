@@ -1,2 +1,134 @@
 <!DOCTYPE html>
-<html><head><title>Watch Deals</title></head><body>stub</body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch Deals</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">Watch Deals</div>
+  <div class="app-meta">Last synced <span id="last-sync">—</span></div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+
+    <div class="filter-section">
+      <span class="filter-label">Hot Deals</span>
+      <div class="toggle-row">
+        <span class="toggle-label">Under ceiling only</span>
+        <button class="toggle" id="hot-toggle" aria-pressed="false">
+          <span class="toggle-dot"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Price Range</span>
+      <div class="price-row">
+        <input class="price-input" id="price-min" type="number" placeholder="$min">
+        <span class="price-sep">–</span>
+        <input class="price-input" id="price-max" type="number" placeholder="$max">
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Brand</span>
+      <select class="filter-select" id="brand-select">
+        <option value="">All brands</option>
+      </select>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Model</span>
+      <select class="filter-select" id="model-select">
+        <option value="">All models</option>
+      </select>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Size</span>
+      <select class="filter-select" id="size-select">
+        <option value="">All sizes</option>
+      </select>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Dial Color</span>
+      <select class="filter-select" id="dial-select">
+        <option value="">All dials</option>
+      </select>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Strap</span>
+      <select class="filter-select" id="strap-select">
+        <option value="">All straps</option>
+      </select>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Source</span>
+      <div class="checkbox-group" id="source-group"></div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Date Seen</span>
+      <select class="filter-select" id="date-select">
+        <option value="">All time</option>
+        <option value="24h">Last 24 hours</option>
+        <option value="7d">Last 7 days</option>
+        <option value="30d">Last 30 days</option>
+      </select>
+    </div>
+
+    <button class="clear-btn" id="clear-btn">Clear filters</button>
+
+  </aside>
+
+  <main class="main">
+
+    <div class="toolbar">
+      <div class="result-count" id="result-count">Loading…</div>
+      <div class="sort-row">
+        <span class="sort-label">Sort</span>
+        <select class="sort-select" id="sort-select">
+          <option value="newest">Newest first</option>
+          <option value="price-asc">Price: low to high</option>
+          <option value="price-desc">Price: high to low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Price</th>
+            <th>Title</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Ref</th>
+            <th>Dial / Strap</th>
+            <th>Source</th>
+            <th>Seen</th>
+          </tr>
+        </thead>
+        <tbody id="deals-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">
+        No deals yet — check back after the next monitor run.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
