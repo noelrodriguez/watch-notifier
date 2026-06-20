@@ -1,0 +1,39 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-19-watch-registry-crud.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Schema migration + pure helpers",
+      "status": "pending",
+      "description": "**Goal:** Add `id` + `relevance_required_all` to the registry and add the pure helper functions the rest of the plan depends on.\n\n**Files:** data/watches.json, watch_monitor.py, tests/test_tagging.py\n\n**Verify:** python3 -m pytest tests/test_tagging.py -v\n\n```json:metadata\n{\"files\": [\"watch_monitor.py\", \"tests/test_tagging.py\", \"data/watches.json\"], \"verifyCommand\": \"python3 -m pytest tests/test_tagging.py -v\", \"acceptanceCriteria\": [\"slugify returns expected slug\", \"size_signals returns size strings\", \"tag_deal preferred_signals from size_mm\", \"watches.json migrated with id + relevance_required_all\"], \"modelTier\": \"standard\"}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Config-driven search, relevance, and push",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** Drive searching, relevance filtering, and the hot flag entirely from the registry; delete the global config constants.\n\n**Files:** watch_monitor.py, tests/test_tagging.py\n\n**Verify:** python3 -m pytest tests/test_tagging.py -v && python3 -c 'import watch_monitor'\n\n```json:metadata\n{\"files\": [\"watch_monitor.py\", \"tests/test_tagging.py\"], \"verifyCommand\": \"python3 -m pytest tests/test_tagging.py -v && python3 -c 'import watch_monitor'\", \"acceptanceCriteria\": [\"is_relevant takes groups arg\", \"search functions registry-driven\", \"push_ntfy uses is_hot/preferred_signals\", \"globals + preferred_hits removed\", \"main loads registry before search\"], \"modelTier\": \"standard\"}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Flask CRUD API for the watch registry",
+      "status": "pending",
+      "description": "**Goal:** Add validated create/update/delete routes for `watches.json` with atomic writes.\n\n**Files:** webapp/flask/app.py, webapp/flask/tests/test_app.py\n\n**Verify:** python3 -m pytest webapp/flask/tests/test_app.py -v\n\n```json:metadata\n{\"files\": [\"webapp/flask/app.py\", \"webapp/flask/tests/test_app.py\"], \"verifyCommand\": \"python3 -m pytest webapp/flask/tests/test_app.py -v\", \"acceptanceCriteria\": [\"POST valid 201 with slug id\", \"POST missing field 400\", \"POST no valid ref 400\", \"POST duplicate 409\", \"PUT updates / 404 unknown\", \"DELETE removes / 404 unknown\", \"relevance auto-derived default\", \"atomic write\"], \"modelTier\": \"standard\"}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Flask git status + push-to-activate routes",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "**Goal:** Expose whether `watches.json` has unsaved/unpushed changes and a route to commit+push it.\n\n**Files:** webapp/flask/app.py, webapp/flask/tests/test_app.py\n\n**Verify:** python3 -m pytest webapp/flask/tests/test_app.py -k 'status or push' -v\n\n```json:metadata\n{\"files\": [\"webapp/flask/app.py\", \"webapp/flask/tests/test_app.py\"], \"verifyCommand\": \"python3 -m pytest webapp/flask/tests/test_app.py -k 'status or push' -v\", \"acceptanceCriteria\": [\"GET status returns dirty/ahead/needs_push\", \"POST push success ok true\", \"POST push failure 500 ok false\", \"status degrades safely on git error\"], \"modelTier\": \"standard\"}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Watches view — nav, list, form, push banner",
+      "status": "pending",
+      "blockedBy": [3, 4],
+      "description": "**Goal:** Add a browser UI to view/add/edit/delete watches and push changes, in the existing Flask single-page app.\n\n**Files:** webapp/flask/templates/index.html, webapp/flask/static/app.js, webapp/flask/static/style.css\n\n**Verify:** python3 -m pytest webapp/flask/tests/test_app.py -v (plus manual browser check)\n\n```json:metadata\n{\"files\": [\"webapp/flask/templates/index.html\", \"webapp/flask/static/app.js\", \"webapp/flask/static/style.css\"], \"verifyCommand\": \"python3 -m pytest webapp/flask/tests/test_app.py -v\", \"acceptanceCriteria\": [\"nav toggle deals/watches\", \"list with edit/delete\", \"add/edit form with required refs + advanced\", \"POST/PUT save with inline errors\", \"push banner with activate button\", \"banner reflects status on load\"], \"modelTier\": \"standard\"}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-19T00:00:00Z"
+}
