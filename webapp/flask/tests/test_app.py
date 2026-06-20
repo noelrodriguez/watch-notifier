@@ -3,7 +3,7 @@ import json
 import sys
 import pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from app import app as flask_app
@@ -149,3 +149,42 @@ def test_create_watch_size_zero_rejected_is_none_only(client, tmp_path):
     with patch("app.DATA_DIR", tmp_path):
         r = client.post("/api/watches", json=bad)
     assert r.status_code == 400
+
+
+def test_status_clean(client):
+    fake = MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", return_value=fake):
+        r = client.get("/api/status")
+    assert r.status_code == 200
+    body = json.loads(r.data)
+    assert body["needs_push"] is False
+
+
+def test_status_dirty(client):
+    def fake_run(cmd, **kw):
+        if "status" in cmd:
+            return MagicMock(returncode=0, stdout=" M data/watches.json\n", stderr="")
+        return MagicMock(returncode=0, stdout="0\n", stderr="")
+    with patch("app.subprocess.run", side_effect=fake_run):
+        r = client.get("/api/status")
+    body = json.loads(r.data)
+    assert body["dirty"] is True
+    assert body["needs_push"] is True
+
+
+def test_push_success(client):
+    fake = MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", return_value=fake):
+        r = client.post("/api/push")
+    assert r.status_code == 200
+    assert json.loads(r.data)["ok"] is True
+
+
+def test_push_failure(client):
+    fake = MagicMock(returncode=1, stdout="", stderr="rejected: auth failed")
+    with patch("app.subprocess.run", return_value=fake):
+        r = client.post("/api/push")
+    assert r.status_code == 500
+    body = json.loads(r.data)
+    assert body["ok"] is False
+    assert "auth failed" in body["error"]
