@@ -164,8 +164,13 @@ def size_signals(size_mm):
 
 # ------------------------------------------------------------------ SOURCES --
 def search_reddit(registry):
-    """r/watchexchange via the public JSON endpoint. Reliable, no auth."""
+    """r/watchexchange via the public JSON endpoint. Reliable, no auth.
+
+    Relevance is scoped per registry entry: a listing is kept if it matches the
+    search-term entry's own relevance_required_all groups.
+    """
     out = []
+    seen_ids = set()
     for entry in registry:
         groups = entry.get("relevance_required_all", [])
         for term in entry.get("search_terms", []):
@@ -182,8 +187,12 @@ def search_reddit(registry):
                     low = title.lower()
                     if low.startswith("[wtb") or "sold" in low:
                         continue
+                    item_id = f"reddit:{d.get('id')}"
+                    if item_id in seen_ids:
+                        continue
+                    seen_ids.add(item_id)
                     out.append({
-                        "id": f"reddit:{d.get('id')}",
+                        "id": item_id,
                         "title": title,
                         "price": parse_price(title),
                         "url": "https://www.reddit.com" + d.get("permalink", ""),
@@ -196,8 +205,13 @@ def search_reddit(registry):
 
 
 def search_ebay(registry):
-    """eBay newly-listed search results (HTML scrape — usually works w/o JS)."""
+    """eBay newly-listed search results (HTML scrape — usually works w/o JS).
+
+    Relevance is scoped per registry entry: a listing is kept if it matches the
+    search-term entry's own relevance_required_all groups.
+    """
     out = []
+    seen_ids = set()
     for entry in registry:
         groups = entry.get("relevance_required_all", [])
         for term in entry.get("search_terms", []):
@@ -219,8 +233,12 @@ def search_ebay(registry):
                     link = a.get("href", "").split("?")[0]
                     m = re.search(r"/itm/(\d+)", link)
                     item_id = m.group(1) if m else link
+                    full_id = f"ebay:{item_id}"
+                    if full_id in seen_ids:
+                        continue
+                    seen_ids.add(full_id)
                     out.append({
-                        "id": f"ebay:{item_id}",
+                        "id": full_id,
                         "title": title,
                         "price": parse_price(price_el.get_text() if price_el else ""),
                         "url": link,
