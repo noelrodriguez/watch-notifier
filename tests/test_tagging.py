@@ -146,4 +146,4 @@ def test_size_signals_none():
 def test_tag_preferred_signals_from_size():
     item = {**BASE_ITEM, "title": "Longines Master Moonphase 40mm bracelet"}
     result = tag_deal(item, REGISTRY)
-    assert "40mm" in result["preferred_signals"]
+    assert result["preferred_signals"] == ["40mm"]

@@ -110,9 +110,8 @@ def tag_deal(item, registry):
             item["model"] = entry.get("model")
             item["size_mm"] = entry.get("size_mm")
 
-            title_l = item["title"].lower()
             item["preferred_signals"] = [
-                s for s in size_signals(entry.get("size_mm")) if s in title_l
+                s for s in size_signals(entry.get("size_mm")) if s in title_lower
             ]
 
             item["ref_matches"] = [r["ref"] for r in matched_refs]
