@@ -87,6 +87,7 @@ def test_tag_no_registry_match_returns_nulls():
     result = tag_deal(item, REGISTRY)
     assert result["brand"] is None
     assert result["ref_matches"] == []
+    assert result["preferred_signals"] == []
     assert result["is_hot"] is False
 
 
