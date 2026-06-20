@@ -181,10 +181,34 @@ def test_push_success(client):
 
 
 def test_push_failure(client):
-    fake = MagicMock(returncode=1, stdout="", stderr="rejected: auth failed")
-    with patch("app.subprocess.run", return_value=fake):
+    def fake_run(cmd, **kw):
+        if "push" in cmd:
+            return MagicMock(returncode=1, stdout="", stderr="rejected: auth failed")
+        if "diff" in cmd:
+            return MagicMock(returncode=1, stdout="", stderr="")  # staged changes present
+        return MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", side_effect=fake_run):
         r = client.post("/api/push")
     assert r.status_code == 500
     body = json.loads(r.data)
     assert body["ok"] is False
     assert "auth failed" in body["error"]
+
+
+def test_push_add_failure(client):
+    def fake_run(cmd, **kw):
+        if "add" in cmd:
+            return MagicMock(returncode=1, stdout="", stderr="add failed")
+        return MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", side_effect=fake_run):
+        r = client.post("/api/push")
+    assert r.status_code == 500
+    assert "add failed" in json.loads(r.data)["error"]
+
+
+def test_push_timeout(client):
+    import subprocess as sp
+    with patch("app.subprocess.run", side_effect=sp.TimeoutExpired(cmd="git", timeout=30)):
+        r = client.post("/api/push")
+    assert r.status_code == 500
+    assert "timed out" in json.loads(r.data)["error"]
