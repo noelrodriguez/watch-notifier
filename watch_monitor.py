@@ -99,7 +99,7 @@ def tag_deal(item, registry):
     item["dial"] = None
     item["strap"] = None
     item["is_hot"] = False
-    item["preferred_signals"] = preferred_hits(item["title"])
+    item["preferred_signals"] = []
 
     title_lower = item["title"].lower()
     for entry in registry:
@@ -109,6 +109,11 @@ def tag_deal(item, registry):
             item["brand"] = entry.get("brand")
             item["model"] = entry.get("model")
             item["size_mm"] = entry.get("size_mm")
+
+            title_l = item["title"].lower()
+            item["preferred_signals"] = [
+                s for s in size_signals(entry.get("size_mm")) if s in title_l
+            ]
 
             item["ref_matches"] = [r["ref"] for r in matched_refs]
             if matched_refs:
@@ -164,6 +169,19 @@ def is_relevant(title):
 def preferred_hits(title):
     t = title.lower()
     return [s for s in PREFERRED_SIGNALS if s in t]
+
+
+def slugify(brand, model):
+    """Stable id from brand + model: lowercase, non-alphanumerics → single hyphens."""
+    raw = f"{brand} {model}".lower()
+    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", raw)).strip("-")
+
+
+def size_signals(size_mm):
+    """Preferred-match size strings derived from a watch's case size."""
+    if not size_mm:
+        return []
+    return [f"{size_mm}mm", f"{size_mm} mm"]
 
 
 # ------------------------------------------------------------------ SOURCES --

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from watch_monitor import tag_deal, save_deals
+from watch_monitor import tag_deal, save_deals, slugify, size_signals
 
 REGISTRY = [
     {
@@ -123,3 +123,26 @@ def test_save_deals_appends_to_existing(tmp_path):
     saved = json.loads(deals_file.read_text())
     assert len(saved) == 2
     assert saved[1]["id"] == "test:1"
+
+
+def test_slugify_brand_model():
+    assert slugify("Longines", "Master Collection Chrono Moonphase") == \
+        "longines-master-collection-chrono-moonphase"
+
+
+def test_slugify_strips_punctuation_and_collapses():
+    assert slugify("Tag Heuer", "Carrera (Calibre 16)") == "tag-heuer-carrera-calibre-16"
+
+
+def test_size_signals_40():
+    assert size_signals(40) == ["40mm", "40 mm"]
+
+
+def test_size_signals_none():
+    assert size_signals(None) == []
+
+
+def test_tag_preferred_signals_from_size():
+    item = {**BASE_ITEM, "title": "Longines Master Moonphase 40mm bracelet"}
+    result = tag_deal(item, REGISTRY)
+    assert "40mm" in result["preferred_signals"]

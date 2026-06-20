@@ -1,18 +1,20 @@
 [
   {
+    "id": "longines-master-collection-chrono-moonphase",
     "brand": "Longines",
     "model": "Master Collection Chrono Moonphase",
     "size_mm": 40,
+    "search_terms": [
+      "longines master moonphase",
+      "longines master chronograph moonphase"
+    ],
+    "relevance_required_all": [["longines", "master", "moon"]],
     "refs": [
       { "ref": "L2.673.4.78.6", "dial": "silver",     "strap": "bracelet" },
       { "ref": "L2.673.4.78.3", "dial": "silver",     "strap": "leather"  },
       { "ref": "L2.673.4.61.6", "dial": "anthracite", "strap": "bracelet" },
       { "ref": "L2.673.4.71.2", "dial": "ivory",      "strap": "leather"  },
       { "ref": "L2.673.4.92.0", "dial": "blue",       "strap": "bracelet" }
-    ],
-    "search_terms": [
-      "longines master moonphase",
-      "longines master chronograph moonphase"
     ],
     "price_ceiling": 2000,
     "notes": "40mm only — 42mm is L2.773 family, not the target"
