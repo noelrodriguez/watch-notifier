@@ -49,7 +49,7 @@ PREFERRED_SIGNALS = ["40mm", "40 mm", "l2.673", "78.6", "chrono"]
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID   = os.getenv("TELEGRAM_CHAT_ID", "")
 
-STATE_FILE = Path(__file__).with_name("monitor_state.json")
+STATE_FILE = Path(__file__).parent / "data" / "monitor_state.json"
 MAX_PUSH_PER_RUN = 8          # safety cap so a first run / source glitch can't spam you
 HTTP_TIMEOUT = 20
 UA = "watch-tracker-monitor/1.0 (personal use)"

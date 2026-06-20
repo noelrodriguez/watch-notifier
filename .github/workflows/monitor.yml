@@ -50,15 +50,15 @@ jobs:
             python watch_monitor.py
           fi
 
-      - name: Persist dedup state
-        # Commit monitor_state.json back so dedup memory survives between runs.
+      - name: Persist monitor data
+        # Commit data files back so dedup memory and deal database survive between runs.
         # This commit also keeps the repo "active", preventing GitHub from
         # auto-disabling scheduled workflows after 60 days of inactivity.
         run: |
-          if [ -n "$(git status --porcelain monitor_state.json)" ]; then
+          if [ -n "$(git status --porcelain data/monitor_state.json data/deals.json)" ]; then
             git config user.name "watch-tracker-bot"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add monitor_state.json
+            git add data/monitor_state.json data/deals.json
             git commit -m "chore: update monitor state [skip ci]"
             git push
           else
