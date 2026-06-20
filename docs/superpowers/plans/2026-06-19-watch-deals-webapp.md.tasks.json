@@ -1,0 +1,54 @@
+{
+  "planPath": "docs/superpowers/plans/2026-06-19-watch-deals-webapp.md",
+  "tasks": [
+    {
+      "id": 9,
+      "subject": "Task 0: Data directory setup + path migration",
+      "status": "pending",
+      "description": "**Goal:** Create `data/`, populate `data/watches.json`, move `monitor_state.json` to `data/`, and update all references so the monitor still runs cleanly.\n\n**Files:**\n- Create: `data/watches.json`\n- Modify: `watch_monitor.py` line 52 (STATE_FILE path)\n- Modify: `.github/workflows/monitor.yml` lines 53–66 (git add references)\n\n**Acceptance Criteria:**\n- [ ] `data/watches.json` exists with all 5 Longines refs\n- [ ] `watch_monitor.py` STATE_FILE resolves to `data/monitor_state.json`\n- [ ] `python watch_monitor.py --test` runs without Python error\n- [ ] `monitor.yml` git add references `data/monitor_state.json` and `data/deals.json`\n\n**Verify:** `python watch_monitor.py --test` → no traceback\n\n```json:metadata\n{\"files\": [\"data/watches.json\", \"watch_monitor.py\", \".github/workflows/monitor.yml\"], \"verifyCommand\": \"python watch_monitor.py --test\", \"acceptanceCriteria\": [\"data/watches.json exists with 5 refs\", \"STATE_FILE path is data/monitor_state.json\", \"monitor.yml references data/ paths\"], \"modelTier\": \"mechanical\"}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 1: Monitor deal tagging and persistence",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "**Goal:** Extend `watch_monitor.py` so every new listing is tagged with brand/model/ref/dial/strap from the registry and appended to `data/deals.json`.\n\n**Files:**\n- Modify: `watch_monitor.py`\n- Create: `tests/__init__.py`\n- Create: `tests/test_tagging.py`\n\n**Acceptance Criteria:**\n- [ ] tag_deal returns all 9 enrichment fields\n- [ ] ref_matches empty when no ref in title\n- [ ] is_hot correct at/above/with-None price\n- [ ] save_deals creates and appends\n- [ ] 11 tests pass\n\n**Verify:** `pytest tests/test_tagging.py -v` → 11 passed\n\n```json:metadata\n{\"files\": [\"watch_monitor.py\", \"tests/__init__.py\", \"tests/test_tagging.py\"], \"verifyCommand\": \"pytest tests/test_tagging.py -v\", \"acceptanceCriteria\": [\"tag_deal returns all 9 enrichment fields\", \"ref_matches empty when no ref in title\", \"is_hot correct\", \"save_deals creates and appends\", \"11 tests pass\"], \"modelTier\": \"standard\"}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 2: Flask backend",
+      "status": "pending",
+      "blockedBy": [10],
+      "description": "**Goal:** Create a minimal Flask server with 3 routes: GET /, GET /api/deals, GET /api/watches.\n\n**Files:**\n- Create: `webapp/flask/app.py`\n- Create: `webapp/flask/tests/__init__.py`\n- Create: `webapp/flask/tests/test_app.py`\n- Create: `webapp/flask/templates/index.html` (stub)\n\n**Acceptance Criteria:**\n- [ ] GET / returns 200 with Watch Deals in body\n- [ ] GET /api/deals returns [] or file contents\n- [ ] GET /api/watches returns [] or file contents\n- [ ] 5 tests pass\n\n**Verify:** `pytest webapp/flask/tests/test_app.py -v` → 5 passed\n\n```json:metadata\n{\"files\": [\"webapp/flask/app.py\", \"webapp/flask/templates/index.html\", \"webapp/flask/tests/__init__.py\", \"webapp/flask/tests/test_app.py\"], \"verifyCommand\": \"pytest webapp/flask/tests/test_app.py -v\", \"acceptanceCriteria\": [\"GET / returns 200\", \"GET /api/deals returns [] or contents\", \"GET /api/watches returns [] or contents\", \"5 tests pass\"], \"modelTier\": \"mechanical\"}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 3: Flask frontend — HTML and CSS",
+      "status": "pending",
+      "blockedBy": [11],
+      "description": "**Goal:** Replace stub index.html with full Dark Luxury Data Dense page shell and complete stylesheet.\n\n**Files:**\n- Modify: `webapp/flask/templates/index.html`\n- Create: `webapp/flask/static/style.css`\n\n**Acceptance Criteria:**\n- [ ] Near-black background (#07070d) loads\n- [ ] Gold WATCH DEALS header (#c9a84c)\n- [ ] 9-section sidebar visible\n- [ ] Gold table headers visible\n- [ ] No missing-element JS errors\n\n**Verify:** `python webapp/flask/app.py` then open `http://localhost:5000`\n\n```json:metadata\n{\"files\": [\"webapp/flask/templates/index.html\", \"webapp/flask/static/style.css\"], \"verifyCommand\": \"python webapp/flask/app.py\", \"acceptanceCriteria\": [\"near-black background\", \"gold header\", \"9-section sidebar\", \"gold table headers\", \"no JS errors\"], \"modelTier\": \"standard\"}\n```"
+    },
+    {
+      "id": 13,
+      "subject": "Task 4: Flask frontend — JavaScript",
+      "status": "pending",
+      "blockedBy": [12],
+      "description": "**Goal:** Wire up app.js — fetch, populate dropdowns, render table, all filtering/sorting/interactions.\n\n**Files:**\n- Create: `webapp/flask/static/app.js`\n\n**Acceptance Criteria:**\n- [ ] Rows render from /api/deals\n- [ ] Last-sync shows relative time\n- [ ] Dropdowns populated from data\n- [ ] Model scoped to brand\n- [ ] Source checkboxes dynamic\n- [ ] All 9 filters work live\n- [ ] Sort works (newest/price-asc/price-desc)\n- [ ] Result count correct\n- [ ] Row click opens URL in new tab\n- [ ] Clear resets all controls\n- [ ] Empty state when no matches\n\n**Verify:** Flask with 3-deal test fixture, open http://localhost:5000, exercise all 11 behaviors.\n\n```json:metadata\n{\"files\": [\"webapp/flask/static/app.js\"], \"verifyCommand\": \"python webapp/flask/app.py  # with test fixture\", \"acceptanceCriteria\": [\"rows render\", \"last-sync time\", \"dropdowns populated\", \"model scoped to brand\", \"source checkboxes dynamic\", \"all filters live\", \"sort works\", \"result count\", \"row click opens URL\", \"clear resets\", \"empty state\"], \"modelTier\": \"frontier\"}\n```"
+    },
+    {
+      "id": 14,
+      "subject": "Task 5: Streamlit app",
+      "status": "pending",
+      "blockedBy": [10],
+      "description": "**Goal:** Build Streamlit alternative reading data/deals.json with same filter dimensions.\n\n**Files:**\n- Create: `webapp/streamlit/app.py`\n\n**Acceptance Criteria:**\n- [ ] App starts without error\n- [ ] Table shows deals\n- [ ] All 9 sidebar filters present\n- [ ] Filtering rerenders table\n- [ ] Empty state when no file\n- [ ] Result count shown\n\n**Verify:** `python -m streamlit run webapp/streamlit/app.py` → open http://localhost:8501, filter by brand.\n\n```json:metadata\n{\"files\": [\"webapp/streamlit/app.py\"], \"verifyCommand\": \"python -m streamlit run webapp/streamlit/app.py\", \"acceptanceCriteria\": [\"app starts\", \"table shows deals\", \"9 filters in sidebar\", \"filtering works\", \"empty state\", \"result count\"], \"modelTier\": \"standard\"}\n```"
+    },
+    {
+      "id": 15,
+      "subject": "Task 6: Startup script and requirements update",
+      "status": "pending",
+      "blockedBy": [13, 14],
+      "description": "**Goal:** Write webapp/start.sh one-click launcher and update requirements.txt.\n\n**Files:**\n- Create: `webapp/start.sh`\n- Modify: `requirements.txt`\n\n**Acceptance Criteria:**\n- [ ] Flask starts on :5000\n- [ ] Streamlit starts on :8501\n- [ ] Both browser tabs open\n- [ ] Re-run kills existing instances\n- [ ] pip install -r requirements.txt succeeds\n\n**Verify:** `bash webapp/start.sh` → both tabs open within ~3 seconds.\n\n```json:metadata\n{\"files\": [\"webapp/start.sh\", \"requirements.txt\"], \"verifyCommand\": \"bash webapp/start.sh\", \"acceptanceCriteria\": [\"Flask on :5000\", \"Streamlit on :8501\", \"both tabs open\", \"re-run kills existing\", \"pip install succeeds\"], \"modelTier\": \"mechanical\"}\n```"
+    }
+  ],
+  "lastUpdated": "2026-06-19T00:00:00Z"
+}
