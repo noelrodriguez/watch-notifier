@@ -1,2 +1,15 @@
+# ── Monitor deps ──────────────────────────────────────────────────────────────
 requests>=2.31
 beautifulsoup4>=4.12
+
+# ── Flask web app (webapp/flask/) ─────────────────────────────────────────────
+# Remove this section if dropping Flask: rm -rf webapp/flask
+flask>=3.0
+
+# ── Streamlit web app (webapp/streamlit/) ─────────────────────────────────────
+# Remove this section if dropping Streamlit: rm -rf webapp/streamlit
+streamlit>=1.35
+pandas>=2.0
+
+# ── Dev / testing ─────────────────────────────────────────────────────────────
+pytest>=8.0
