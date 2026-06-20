@@ -18,11 +18,11 @@ sleep 0.5
 
 echo "==> Starting Flask on :5000..."
 cd "$FLASK_DIR"
-FLASK_APP=app.py python -m flask run --port 5000 > "$FLASK_LOG" 2>&1 &
+FLASK_APP=app.py python3 -m flask run --port 5000 > "$FLASK_LOG" 2>&1 &
 FLASK_PID=$!
 
 echo "==> Starting Streamlit on :8501..."
-python -m streamlit run "$STREAMLIT_APP" \
+python3 -m streamlit run "$STREAMLIT_APP" \
   --server.port 8501 \
   --server.headless true \
   > "$STREAMLIT_LOG" 2>&1 &
