@@ -49,7 +49,9 @@ PREFERRED_SIGNALS = ["40mm", "40 mm", "l2.673", "78.6", "chrono"]
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID   = os.getenv("TELEGRAM_CHAT_ID", "")
 
-STATE_FILE = Path(__file__).parent / "data" / "monitor_state.json"
+STATE_FILE    = Path(__file__).parent / "data" / "monitor_state.json"
+DEALS_FILE    = Path(__file__).parent / "data" / "deals.json"
+REGISTRY_FILE = Path(__file__).parent / "data" / "watches.json"
 MAX_PUSH_PER_RUN = 8          # safety cap so a first run / source glitch can't spam you
 HTTP_TIMEOUT = 20
 UA = "watch-tracker-monitor/1.0 (personal use)"
@@ -74,6 +76,65 @@ def save_state(seen_ids):
     STATE_FILE.write_text(json.dumps(
         {"updated": datetime.now(timezone.utc).isoformat(),
          "seen_ids": sorted(seen_ids)}, indent=2))
+
+
+def load_registry():
+    if not REGISTRY_FILE.exists():
+        return []
+    try:
+        return json.loads(REGISTRY_FILE.read_text())
+    except Exception as e:
+        log(f"WARN: could not read registry ({e}); tagging disabled.")
+        return []
+
+
+def tag_deal(item, registry):
+    """Enrich a listing dict with brand/model/ref/dial/strap/is_hot from the registry."""
+    item = dict(item)
+    item["date_seen"] = datetime.now(timezone.utc).isoformat()
+    item["brand"] = None
+    item["model"] = None
+    item["size_mm"] = None
+    item["ref_matches"] = []
+    item["dial"] = None
+    item["strap"] = None
+    item["is_hot"] = False
+    item["preferred_signals"] = preferred_hits(item["title"])
+
+    title_lower = item["title"].lower()
+    for entry in registry:
+        matched_refs = [r for r in entry.get("refs", []) if r["ref"].lower() in title_lower]
+        term_hit = any(term in title_lower for term in entry.get("search_terms", []))
+        if term_hit or matched_refs:
+            item["brand"] = entry.get("brand")
+            item["model"] = entry.get("model")
+            item["size_mm"] = entry.get("size_mm")
+
+            item["ref_matches"] = [r["ref"] for r in matched_refs]
+            if matched_refs:
+                item["dial"] = matched_refs[0].get("dial")
+                item["strap"] = matched_refs[0].get("strap")
+
+            ceiling = entry.get("price_ceiling", float("inf"))
+            item["is_hot"] = item.get("price") is not None and item["price"] <= ceiling
+            break
+
+    return item
+
+
+def save_deals(new_items):
+    """Append new tagged deals to data/deals.json (creates file if absent)."""
+    if not new_items:
+        return
+    existing = []
+    if DEALS_FILE.exists():
+        try:
+            existing = json.loads(DEALS_FILE.read_text())
+        except Exception as e:
+            log(f"WARN: could not read deals file ({e}); starting fresh.")
+    existing.extend(new_items)
+    DEALS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    DEALS_FILE.write_text(json.dumps(existing, indent=2))
 
 
 def parse_price(text):
@@ -306,13 +367,19 @@ def main():
             "Future runs will alert on genuinely new listings.")
         return
 
+    registry = load_registry()
+    tagged_new = [tag_deal(it, registry) for it in new_items]
+
     pushed = 0
-    for it in new_items[:MAX_PUSH_PER_RUN]:
+    for it in tagged_new[:MAX_PUSH_PER_RUN]:
         if push_ntfy(it):
             push_telegram(it)
             seen.add(it["id"])
             pushed += 1
             log(f"  pushed: {it['id']} {it.get('price')} {it['title'][:60]}")
+
+    # Save ALL new deals (including overflow beyond MAX_PUSH_PER_RUN) to the web app DB.
+    save_deals(tagged_new)
 
     # Remember everything we saw (even un-pushed overflow) to avoid re-alerting.
     seen.update(unique.keys())
