@@ -132,6 +132,9 @@ def save_deals(new_items):
             existing = json.loads(DEALS_FILE.read_text())
         except Exception as e:
             log(f"WARN: could not read deals file ({e}); starting fresh.")
+        if not isinstance(existing, list):
+            log("WARN: deals file is not a list; starting fresh.")
+            existing = []
     existing.extend(new_items)
     DEALS_FILE.parent.mkdir(parents=True, exist_ok=True)
     DEALS_FILE.write_text(json.dumps(existing, indent=2))

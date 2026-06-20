@@ -96,6 +96,13 @@ def test_tag_adds_date_seen():
     assert "T" in result["date_seen"]   # ISO format
 
 
+def test_save_deals_noop_on_empty_list(tmp_path):
+    deals_file = tmp_path / "deals.json"
+    with patch("watch_monitor.DEALS_FILE", deals_file):
+        save_deals([])
+    assert not deals_file.exists()
+
+
 def test_save_deals_creates_file(tmp_path):
     deals_file = tmp_path / "deals.json"
     items = [{"id": "test:1", "title": "Test Watch", "price": 100}]
