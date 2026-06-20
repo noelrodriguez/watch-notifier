@@ -37,6 +37,14 @@ def test_api_deals_returns_contents(client, tmp_path):
     assert json.loads(r.data) == deals
 
 
+def test_api_deals_returns_empty_on_malformed_json(client, tmp_path):
+    (tmp_path / "deals.json").write_text("not-json")
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.get("/api/deals")
+    assert r.status_code == 200
+    assert json.loads(r.data) == []
+
+
 def test_api_watches_empty_when_no_file(client, tmp_path):
     with patch("app.DATA_DIR", tmp_path):
         r = client.get("/api/watches")

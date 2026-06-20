@@ -18,7 +18,13 @@ def deals():
     p = DATA_DIR / "deals.json"
     if not p.exists():
         return jsonify([])
-    return jsonify(json.loads(p.read_text()))
+    try:
+        data = json.loads(p.read_text())
+    except Exception:
+        return jsonify([])
+    if not isinstance(data, list):
+        return jsonify([])
+    return jsonify(data)
 
 
 @app.route("/api/watches")
@@ -26,7 +32,13 @@ def watches():
     p = DATA_DIR / "watches.json"
     if not p.exists():
         return jsonify([])
-    return jsonify(json.loads(p.read_text()))
+    try:
+        data = json.loads(p.read_text())
+    except Exception:
+        return jsonify([])
+    if not isinstance(data, list):
+        return jsonify([])
+    return jsonify(data)
 
 
 if __name__ == "__main__":
