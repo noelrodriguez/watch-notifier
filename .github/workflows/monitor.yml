@@ -1,0 +1,66 @@
+name: Watch Tracker Monitor
+
+# Runs the Longines moonphase monitor on a schedule, plus a manual button.
+on:
+  schedule:
+    # Hourly, on the hour. NOTE: GitHub cron is UTC and runs can be delayed
+    # 10-30 min under load. Fine for an hourly deal check.
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      test_push:
+        description: "Send a TEST push instead of a real scan (to verify ntfy)"
+        type: boolean
+        default: false
+
+# Needed so the job can commit the updated dedup state back to the repo.
+permissions:
+  contents: write
+
+# Never let two runs overlap.
+concurrency:
+  group: watch-tracker-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run monitor
+        env:
+          # Source of truth for the topic. Add it under
+          # Settings -> Secrets and variables -> Actions -> NTFY_TOPIC
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ "${{ github.event.inputs.test_push }}" = "true" ]; then
+            echo "Sending TEST push..."
+            python watch_monitor.py --test
+          else
+            python watch_monitor.py
+          fi
+
+      - name: Persist dedup state
+        # Commit monitor_state.json back so dedup memory survives between runs.
+        # This commit also keeps the repo "active", preventing GitHub from
+        # auto-disabling scheduled workflows after 60 days of inactivity.
+        run: |
+          if [ -n "$(git status --porcelain monitor_state.json)" ]; then
+            git config user.name "watch-tracker-bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add monitor_state.json
+            git commit -m "chore: update monitor state [skip ci]"
+            git push
+          else
+            echo "No state change to commit."
+          fi

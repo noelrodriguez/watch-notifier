@@ -1,0 +1,22 @@
+# --- Watch Tracker ---
+# NOTE: monitor_state.json is intentionally NOT ignored — the GitHub Action
+# commits it back each run to persist dedup memory across runs.
+
+# Local run logs
+*.log
+monitor.log
+
+# Local setup helpers / progress (not used by the GitHub Actions version)
+setup.command
+setup.bat
+.setup_progress
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
