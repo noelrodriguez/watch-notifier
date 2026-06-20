@@ -32,18 +32,10 @@ def deals():
 
 @app.route("/api/watches")
 def watches():
-    p = DATA_DIR / "watches.json"
-    if not p.exists():
-        return jsonify([])
-    try:
-        data = json.loads(p.read_text())
-    except Exception:
-        return jsonify([])
-    if not isinstance(data, list):
-        return jsonify([])
-    return jsonify(data)
+    return jsonify(_load_watches())
 
 
+# Keep in sync with slugify() in watch_monitor.py (separate process, no shared import).
 def _slugify(brand, model):
     raw = f"{brand} {model}".lower()
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", raw)).strip("-")
@@ -75,9 +67,11 @@ def _save_watches(watches):
 
 def _validate(payload):
     """Return (entry, error). entry is the normalized dict on success."""
-    for field in ("brand", "model", "size_mm"):
+    for field in ("brand", "model"):
         if not payload.get(field):
             return None, f"{field} is required"
+    if payload.get("size_mm") is None:
+        return None, "size_mm is required"
     refs = payload.get("refs") or []
     if not any(r.get("dial") and r.get("strap") and r.get("ref") for r in refs):
         return None, "at least one ref with dial and strap is required"

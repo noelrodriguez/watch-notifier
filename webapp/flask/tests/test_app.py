@@ -140,3 +140,12 @@ def test_delete_watch_unknown_id(client, tmp_path):
     with patch("app.DATA_DIR", tmp_path):
         r = client.delete("/api/watches/nope")
     assert r.status_code == 404
+
+
+def test_create_watch_size_zero_rejected_is_none_only(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    # size_mm explicitly None → rejected; but a real positive size is accepted.
+    bad = {**VALID_WATCH, "size_mm": None}
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=bad)
+    assert r.status_code == 400
