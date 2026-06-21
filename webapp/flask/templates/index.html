@@ -11,8 +11,13 @@
 <header class="app-header">
   <div class="app-title">Watch Deals</div>
   <div class="app-meta">Last synced <span id="last-sync">—</span></div>
+  <nav class="view-nav">
+    <button id="nav-deals" class="nav-btn active" data-view="deals-view">Deals</button>
+    <button id="nav-watches" class="nav-btn" data-view="watches-view">Watches</button>
+  </nav>
 </header>
 
+<section id="deals-view">
 <div class="layout">
 
   <aside class="sidebar">
@@ -127,6 +132,48 @@
     </div>
 
   </main>
+</div>
+</section>
+
+<section id="watches-view" style="display:none">
+  <div id="push-banner" class="push-banner" style="display:none">
+    <span id="push-banner-text"></span>
+    <button id="push-btn">Push to activate</button>
+  </div>
+  <div class="watches-header">
+    <h2>Tracked Watches (<span id="watch-count">0</span>)</h2>
+    <button id="add-watch-btn">＋ Add Watch</button>
+  </div>
+  <div id="watches-list"></div>
+</section>
+
+<div id="watch-modal" class="modal" style="display:none">
+  <div class="modal-card">
+    <h3 id="watch-modal-title">Add Watch</h3>
+    <div id="form-error" class="form-error" style="display:none"></div>
+    <input type="hidden" id="f-id">
+    <label>Brand <input id="f-brand"></label>
+    <label>Model <input id="f-model"></label>
+    <label>Size (mm) <input id="f-size" type="number"></label>
+    <label>Price ceiling <input id="f-ceiling" type="number"></label>
+    <label>Notes <input id="f-notes"></label>
+    <div class="refs-section">
+      <div class="label">Refs (at least one, with dial + strap)</div>
+      <div id="refs-rows"></div>
+      <button id="add-ref-btn" type="button">＋ Add ref</button>
+    </div>
+    <details class="advanced">
+      <summary>Advanced</summary>
+      <label>Search terms (one per line)
+        <textarea id="f-search-terms"></textarea></label>
+      <label>Relevance groups (comma-separated words, one group per line)
+        <textarea id="f-relevance"></textarea></label>
+    </details>
+    <div class="modal-actions">
+      <button id="watch-cancel" type="button">Cancel</button>
+      <button id="watch-save" type="button">Save</button>
+    </div>
+  </div>
 </div>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>

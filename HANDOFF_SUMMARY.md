@@ -122,7 +122,7 @@ Done = phone push on every new listing, cheapest first, 🔥 high-priority for �
 ## 8. Open items / good next moves
 
 - [ ] Run the new-PC setup (§6) and confirm `--test` push.
-- [ ] Add more watches Noel is hunting → improves the learned style/size profile and expands `SEARCH_TERMS`.
+- [ ] Add more watches Noel is hunting → improves the learned style/size profile and expands `data/watches.json` (or via the web UI's Watches tab).
 - [ ] Optional: widen the monitor beyond Longines to other brands/models.
 - [ ] Optional: add WatchUSeek/WatchRecon as additional scraped sources.
 - [ ] Optional: revisit headless-browser Chrono24 if its coverage is too thin.

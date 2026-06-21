@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from watch_monitor import tag_deal, save_deals
+from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant
 
 REGISTRY = [
     {
@@ -87,6 +87,7 @@ def test_tag_no_registry_match_returns_nulls():
     result = tag_deal(item, REGISTRY)
     assert result["brand"] is None
     assert result["ref_matches"] == []
+    assert result["preferred_signals"] == []
     assert result["is_hot"] is False
 
 
@@ -123,3 +124,59 @@ def test_save_deals_appends_to_existing(tmp_path):
     saved = json.loads(deals_file.read_text())
     assert len(saved) == 2
     assert saved[1]["id"] == "test:1"
+
+
+def test_slugify_brand_model():
+    assert slugify("Longines", "Master Collection Chrono Moonphase") == \
+        "longines-master-collection-chrono-moonphase"
+
+
+def test_slugify_strips_punctuation_and_collapses():
+    assert slugify("Tag Heuer", "Carrera (Calibre 16)") == "tag-heuer-carrera-calibre-16"
+
+
+def test_size_signals_40():
+    assert size_signals(40) == ["40mm", "40 mm"]
+
+
+def test_size_signals_none():
+    assert size_signals(None) == []
+
+
+def test_tag_preferred_signals_from_size():
+    item = {**BASE_ITEM, "title": "Longines Master Moonphase 40mm bracelet"}
+    result = tag_deal(item, REGISTRY)
+    assert result["preferred_signals"] == ["40mm"]
+
+
+def test_is_relevant_matches_group():
+    groups = [["longines", "master", "moon"]]
+    assert is_relevant("Longines Master Moonphase 40mm", groups) is True
+
+
+def test_is_relevant_rejects_partial():
+    groups = [["longines", "master", "moon"]]
+    assert is_relevant("Longines Master Collection (no complication)", groups) is False
+
+
+def test_is_relevant_empty_groups_is_false():
+    assert is_relevant("anything at all", []) is False
+
+
+def test_tag_no_ceiling_does_not_crash():
+    registry = [{
+        "brand": "Omega", "model": "Speedmaster", "size_mm": 42,
+        "search_terms": ["omega speedmaster"],
+        "refs": [{"ref": "310.30", "dial": "black", "strap": "bracelet"}],
+        "price_ceiling": None,
+    }]
+    item = {
+        "id": "reddit:xyz",
+        "title": "Omega Speedmaster 42mm",
+        "price": 5000,
+        "url": "https://reddit.com/r/Watchexchange/comments/xyz",
+        "source": "r/watchexchange",
+    }
+    result = tag_deal(item, registry)  # must not raise
+    assert result["brand"] == "Omega"
+    assert result["is_hot"] is True  # no ceiling = infinite ceiling, priced item qualifies

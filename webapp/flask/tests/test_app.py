@@ -3,7 +3,7 @@ import json
 import sys
 import pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from app import app as flask_app
@@ -58,3 +58,157 @@ def test_api_watches_returns_contents(client, tmp_path):
     with patch("app.DATA_DIR", tmp_path):
         r = client.get("/api/watches")
     assert json.loads(r.data) == watches
+
+
+VALID_WATCH = {
+    "brand": "Rolex",
+    "model": "Submariner Date",
+    "size_mm": 41,
+    "search_terms": ["rolex submariner date"],
+    "refs": [{"ref": "126610LN", "dial": "black", "strap": "bracelet"}],
+    "price_ceiling": 15000,
+}
+
+
+def test_create_watch_valid(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=VALID_WATCH)
+    assert r.status_code == 201
+    body = json.loads(r.data)
+    assert body["id"] == "rolex-submariner-date"
+    assert body["relevance_required_all"] == [["rolex", "submariner", "date"]]
+
+
+def test_create_watch_missing_field(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    bad = {k: v for k, v in VALID_WATCH.items() if k != "size_mm"}
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=bad)
+    assert r.status_code == 400
+    assert "error" in json.loads(r.data)
+
+
+def test_create_watch_no_valid_ref(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    bad = {**VALID_WATCH, "refs": [{"ref": "X", "dial": "", "strap": "bracelet"}]}
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=bad)
+    assert r.status_code == 400
+
+
+def test_create_watch_duplicate_id(client, tmp_path):
+    existing = [{"id": "rolex-submariner-date", "brand": "Rolex",
+                 "model": "Submariner Date"}]
+    (tmp_path / "watches.json").write_text(json.dumps(existing))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=VALID_WATCH)
+    assert r.status_code == 409
+
+
+def test_update_watch(client, tmp_path):
+    existing = [{"id": "rolex-submariner-date", "brand": "Rolex",
+                 "model": "Submariner Date", "size_mm": 41,
+                 "refs": [{"ref": "126610LN", "dial": "black", "strap": "bracelet"}]}]
+    (tmp_path / "watches.json").write_text(json.dumps(existing))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.put("/api/watches/rolex-submariner-date",
+                       json={**VALID_WATCH, "price_ceiling": 12000})
+    assert r.status_code == 200
+    saved = json.loads((tmp_path / "watches.json").read_text())
+    assert saved[0]["price_ceiling"] == 12000
+
+
+def test_update_watch_unknown_id(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.put("/api/watches/nope", json=VALID_WATCH)
+    assert r.status_code == 404
+
+
+def test_delete_watch(client, tmp_path):
+    existing = [{"id": "rolex-submariner-date", "brand": "Rolex"}]
+    (tmp_path / "watches.json").write_text(json.dumps(existing))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.delete("/api/watches/rolex-submariner-date")
+    assert r.status_code == 200
+    assert json.loads((tmp_path / "watches.json").read_text()) == []
+
+
+def test_delete_watch_unknown_id(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.delete("/api/watches/nope")
+    assert r.status_code == 404
+
+
+def test_create_watch_size_zero_rejected_is_none_only(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    # size_mm explicitly None → rejected; but a real positive size is accepted.
+    bad = {**VALID_WATCH, "size_mm": None}
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=bad)
+    assert r.status_code == 400
+
+
+def test_status_clean(client):
+    fake = MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", return_value=fake):
+        r = client.get("/api/status")
+    assert r.status_code == 200
+    body = json.loads(r.data)
+    assert body["needs_push"] is False
+
+
+def test_status_dirty(client):
+    def fake_run(cmd, **kw):
+        if "status" in cmd:
+            return MagicMock(returncode=0, stdout=" M data/watches.json\n", stderr="")
+        return MagicMock(returncode=0, stdout="0\n", stderr="")
+    with patch("app.subprocess.run", side_effect=fake_run):
+        r = client.get("/api/status")
+    body = json.loads(r.data)
+    assert body["dirty"] is True
+    assert body["needs_push"] is True
+
+
+def test_push_success(client):
+    fake = MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", return_value=fake):
+        r = client.post("/api/push")
+    assert r.status_code == 200
+    assert json.loads(r.data)["ok"] is True
+
+
+def test_push_failure(client):
+    def fake_run(cmd, **kw):
+        if "push" in cmd:
+            return MagicMock(returncode=1, stdout="", stderr="rejected: auth failed")
+        if "diff" in cmd:
+            return MagicMock(returncode=1, stdout="", stderr="")  # staged changes present
+        return MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", side_effect=fake_run):
+        r = client.post("/api/push")
+    assert r.status_code == 500
+    body = json.loads(r.data)
+    assert body["ok"] is False
+    assert "auth failed" in body["error"]
+
+
+def test_push_add_failure(client):
+    def fake_run(cmd, **kw):
+        if "add" in cmd:
+            return MagicMock(returncode=1, stdout="", stderr="add failed")
+        return MagicMock(returncode=0, stdout="", stderr="")
+    with patch("app.subprocess.run", side_effect=fake_run):
+        r = client.post("/api/push")
+    assert r.status_code == 500
+    assert "add failed" in json.loads(r.data)["error"]
+
+
+def test_push_timeout(client):
+    import subprocess as sp
+    with patch("app.subprocess.run", side_effect=sp.TimeoutExpired(cmd="git", timeout=30)):
+        r = client.post("/api/push")
+    assert r.status_code == 500
+    assert "timed out" in json.loads(r.data)["error"]

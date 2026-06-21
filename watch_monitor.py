@@ -29,22 +29,6 @@ from bs4 import BeautifulSoup
 NTFY_TOPIC  = os.getenv("NTFY_TOPIC") or "watchtracker-noelrodriguez-12251996"
 NTFY_SERVER = os.getenv("NTFY_SERVER") or "https://ntfy.sh"
 
-# 2) What we're hunting. Keep terms broad; the relevance filter narrows results.
-SEARCH_TERMS = [
-    "longines master moonphase",
-    "longines master chronograph moonphase",
-]
-
-# Highlight (high-priority push) anything at/under this USD price.
-PRICE_ALERT_CEILING = 2000
-
-# A listing must contain ALL of one of these keyword groups to count as relevant.
-RELEVANCE_REQUIRED_ALL = [
-    ["longines", "master", "moon"],   # 'moon' matches moonphase / moon phase / moon-phase
-]
-# Preferred signals — not required, just boost priority / called out in the alert.
-PREFERRED_SIGNALS = ["40mm", "40 mm", "l2.673", "78.6", "chrono"]
-
 # Optional: also mirror alerts to a Telegram bot (leave blank to disable).
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID   = os.getenv("TELEGRAM_CHAT_ID", "")
@@ -99,7 +83,7 @@ def tag_deal(item, registry):
     item["dial"] = None
     item["strap"] = None
     item["is_hot"] = False
-    item["preferred_signals"] = preferred_hits(item["title"])
+    item["preferred_signals"] = []
 
     title_lower = item["title"].lower()
     for entry in registry:
@@ -110,12 +94,16 @@ def tag_deal(item, registry):
             item["model"] = entry.get("model")
             item["size_mm"] = entry.get("size_mm")
 
+            item["preferred_signals"] = [
+                s for s in size_signals(entry.get("size_mm")) if s in title_lower
+            ]
+
             item["ref_matches"] = [r["ref"] for r in matched_refs]
             if matched_refs:
                 item["dial"] = matched_refs[0].get("dial")
                 item["strap"] = matched_refs[0].get("strap")
 
-            ceiling = entry.get("price_ceiling", float("inf"))
+            ceiling = entry.get("price_ceiling") or float("inf")
             item["is_hot"] = item.get("price") is not None and item["price"] <= ceiling
             break
 
@@ -153,83 +141,112 @@ def parse_price(text):
     return None
 
 
-def is_relevant(title):
+def is_relevant(title, groups):
     t = title.lower()
-    for group in RELEVANCE_REQUIRED_ALL:
-        if all(tok in t for tok in group):
+    for group in groups:
+        if group and all(tok in t for tok in group):
             return True
     return False
 
 
-def preferred_hits(title):
-    t = title.lower()
-    return [s for s in PREFERRED_SIGNALS if s in t]
+def slugify(brand, model):
+    """Stable id from brand + model: lowercase, non-alphanumerics → single hyphens."""
+    raw = f"{brand} {model}".lower()
+    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", raw)).strip("-")
+
+
+def size_signals(size_mm):
+    """Preferred-match size strings derived from a watch's case size."""
+    if not size_mm:
+        return []
+    return [f"{size_mm}mm", f"{size_mm} mm"]
 
 
 # ------------------------------------------------------------------ SOURCES --
-def search_reddit():
-    """r/watchexchange via the public JSON endpoint. Reliable, no auth."""
+def search_reddit(registry):
+    """r/watchexchange via the public JSON endpoint. Reliable, no auth.
+
+    Relevance is scoped per registry entry: a listing is kept if it matches the
+    search-term entry's own relevance_required_all groups.
+    """
     out = []
-    for term in SEARCH_TERMS:
-        url = ("https://www.reddit.com/r/Watchexchange/search.json"
-               f"?q={requests.utils.quote(term)}&restrict_sr=on&sort=new&limit=50")
-        try:
-            r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
-            r.raise_for_status()
-            for child in r.json().get("data", {}).get("children", []):
-                d = child.get("data", {})
-                title = html.unescape(d.get("title", ""))
-                if not is_relevant(title):
-                    continue
-                # Skip sold / want-to-buy posts
-                low = title.lower()
-                if low.startswith("[wtb") or "sold" in low:
-                    continue
-                out.append({
-                    "id": f"reddit:{d.get('id')}",
-                    "title": title,
-                    "price": parse_price(title),
-                    "url": "https://www.reddit.com" + d.get("permalink", ""),
-                    "source": "r/watchexchange",
-                })
-        except Exception as e:
-            log(f"WARN: Reddit search failed for '{term}': {e}")
-        time.sleep(1)
+    seen_ids = set()
+    for entry in registry:
+        groups = entry.get("relevance_required_all", [])
+        for term in entry.get("search_terms", []):
+            url = ("https://www.reddit.com/r/Watchexchange/search.json"
+                   f"?q={requests.utils.quote(term)}&restrict_sr=on&sort=new&limit=50")
+            try:
+                r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
+                r.raise_for_status()
+                for child in r.json().get("data", {}).get("children", []):
+                    d = child.get("data", {})
+                    title = html.unescape(d.get("title", ""))
+                    if not is_relevant(title, groups):
+                        continue
+                    low = title.lower()
+                    if low.startswith("[wtb") or "sold" in low:
+                        continue
+                    item_id = f"reddit:{d.get('id')}"
+                    if item_id in seen_ids:
+                        continue
+                    seen_ids.add(item_id)
+                    out.append({
+                        "id": item_id,
+                        "title": title,
+                        "price": parse_price(title),
+                        "url": "https://www.reddit.com" + d.get("permalink", ""),
+                        "source": "r/watchexchange",
+                    })
+            except Exception as e:
+                log(f"WARN: Reddit search failed for '{term}': {e}")
+            time.sleep(1)
     return out
 
 
-def search_ebay():
-    """eBay newly-listed search results (HTML scrape — usually works w/o JS)."""
+def search_ebay(registry):
+    """eBay newly-listed search results (HTML scrape — usually works w/o JS).
+
+    Relevance is scoped per registry entry: a listing is kept if it matches the
+    search-term entry's own relevance_required_all groups.
+    """
     out = []
-    for term in SEARCH_TERMS:
-        url = ("https://www.ebay.com/sch/i.html"
-               f"?_nkw={requests.utils.quote(term)}&_sop=10&LH_BIN=1")
-        try:
-            r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
-            r.raise_for_status()
-            soup = BeautifulSoup(r.text, "html.parser")
-            for li in soup.select("li.s-item"):
-                a = li.select_one("a.s-item__link")
-                title_el = li.select_one(".s-item__title")
-                price_el = li.select_one(".s-item__price")
-                if not a or not title_el:
-                    continue
-                title = title_el.get_text(" ", strip=True)
-                if not is_relevant(title) or "shop on ebay" in title.lower():
-                    continue
-                link = a.get("href", "").split("?")[0]
-                m = re.search(r"/itm/(\d+)", link)
-                item_id = m.group(1) if m else link
-                out.append({
-                    "id": f"ebay:{item_id}",
-                    "title": title,
-                    "price": parse_price(price_el.get_text() if price_el else ""),
-                    "url": link,
-                    "source": "eBay",
-                })
-        except Exception as e:
-            log(f"WARN: eBay search failed for '{term}': {e}")
-        time.sleep(1)
+    seen_ids = set()
+    for entry in registry:
+        groups = entry.get("relevance_required_all", [])
+        for term in entry.get("search_terms", []):
+            url = ("https://www.ebay.com/sch/i.html"
+                   f"?_nkw={requests.utils.quote(term)}&_sop=10&LH_BIN=1")
+            try:
+                r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
+                r.raise_for_status()
+                soup = BeautifulSoup(r.text, "html.parser")
+                for li in soup.select("li.s-item"):
+                    a = li.select_one("a.s-item__link")
+                    title_el = li.select_one(".s-item__title")
+                    price_el = li.select_one(".s-item__price")
+                    if not a or not title_el:
+                        continue
+                    title = title_el.get_text(" ", strip=True)
+                    if not is_relevant(title, groups) or "shop on ebay" in title.lower():
+                        continue
+                    link = a.get("href", "").split("?")[0]
+                    m = re.search(r"/itm/(\d+)", link)
+                    item_id = m.group(1) if m else link
+                    full_id = f"ebay:{item_id}"
+                    if full_id in seen_ids:
+                        continue
+                    seen_ids.add(full_id)
+                    out.append({
+                        "id": full_id,
+                        "title": title,
+                        "price": parse_price(price_el.get_text() if price_el else ""),
+                        "url": link,
+                        "source": "eBay",
+                    })
+            except Exception as e:
+                log(f"WARN: eBay search failed for '{term}': {e}")
+            time.sleep(1)
     return out
 
 
@@ -274,8 +291,8 @@ def search_chrono24():
 # -------------------------------------------------------------------- PUSH ---
 def push_ntfy(item):
     price = f"${item['price']}" if item.get("price") else "price?"
-    prefs = preferred_hits(item["title"])
-    under_ceiling = item.get("price") and item["price"] <= PRICE_ALERT_CEILING
+    prefs = item.get("preferred_signals", [])
+    under_ceiling = bool(item.get("is_hot"))
 
     title = f"{price} · {item['source']}"
     if under_ceiling:
@@ -329,6 +346,8 @@ def run_test_push():
         "price": 1750,
         "url": "https://www.reddit.com/r/Watchexchange/comments/1to9v9y/wts_longines_master_collection_triple_calendar/",
         "source": "self-test",
+        "is_hot": True,
+        "preferred_signals": ["40mm"],
     }
     ok = push_ntfy(sample)
     push_telegram(sample)
@@ -346,10 +365,12 @@ def main():
 
     seen = load_state()
     first_run = not STATE_FILE.exists()
+    registry = load_registry()
 
     found = []
-    for fn in (search_reddit, search_ebay, search_chrono24):
-        found.extend(fn())
+    found.extend(search_reddit(registry))
+    found.extend(search_ebay(registry))
+    found.extend(search_chrono24())
 
     # Dedup within this run and against history
     unique = {}
@@ -370,7 +391,6 @@ def main():
             "Future runs will alert on genuinely new listings.")
         return
 
-    registry = load_registry()
     tagged_new = [tag_deal(it, registry) for it in new_items]
 
     pushed = 0
