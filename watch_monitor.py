@@ -15,6 +15,7 @@ import re
 import sys
 import time
 import html
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -190,36 +191,67 @@ def describe_response(r):
 
 
 # ------------------------------------------------------------------ SOURCES --
-def search_reddit(registry):
-    """r/watchexchange via the public JSON endpoint. Reliable, no auth.
+ATOM = "{http://www.w3.org/2005/Atom}"  # namespace prefix for Reddit's RSS/Atom feed
 
-    Relevance is scoped per registry entry: a listing is kept if it matches the
-    search-term entry's own relevance_required_all groups.
+
+def _get_reddit_rss(url):
+    """GET a Reddit RSS URL, retrying ONCE on 429 after the rate-limit reset.
+
+    The anonymous feed allows only ~1 request per ~minute per IP (it reports
+    x-ratelimit-remaining 0 after every call), so back-to-back per-term queries
+    will 429. We read x-ratelimit-reset and wait it out, then retry once.
+    ponytail: one retry, reset capped at 65s. With many search_terms a run can
+    take a few minutes of waiting — prune terms or cache results if that bites.
+    """
+    r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
+    if r.status_code == 429:
+        try:
+            wait = min(int(r.headers.get("x-ratelimit-reset", "5")) + 1, 65)
+        except ValueError:
+            wait = 5
+        log(f"INFO: Reddit RSS rate-limited; waiting {wait}s then retrying.")
+        time.sleep(wait)
+        r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
+    return r
+
+
+def search_reddit(registry):
+    """r/watchexchange via the public RSS search feed (search.rss). No auth.
+
+    Reddit's anonymous JSON API (search.json and the other *.json endpoints) now
+    returns 403 for unauthenticated clients regardless of User-Agent or IP, but
+    the RSS syndication feed still serves results anonymously. Atom entries carry
+    the title (for relevance + price), the permalink, and the post id — all we
+    need. NOTE: the feed's search does NOT honor boolean OR, so terms must be
+    queried one at a time. Relevance is scoped per registry entry.
     """
     out = []
     seen_ids = set()
     for entry in registry:
         groups = entry.get("relevance_required_all", [])
         for term in entry.get("search_terms", []):
-            url = ("https://www.reddit.com/r/Watchexchange/search.json"
+            url = ("https://www.reddit.com/r/Watchexchange/search.rss"
                    f"?q={requests.utils.quote(term)}&restrict_sr=on&sort=new&limit=50")
             try:
-                r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
+                r = _get_reddit_rss(url)
                 if not r.ok:
-                    detail = describe_response(r)
-                    log(f"WARN: Reddit search failed for '{term}': {detail}")
+                    log(f"WARN: Reddit search failed for '{term}': {describe_response(r)}")
                     RUN_ERRORS.append(f"Reddit '{term}': HTTP {r.status_code}")
-                    time.sleep(1)
                     continue
-                for child in r.json().get("data", {}).get("children", []):
-                    d = child.get("data", {})
-                    title = html.unescape(d.get("title", ""))
+                feed = ET.fromstring(r.content)
+                for item in feed.iter(f"{ATOM}entry"):
+                    title_el = item.find(f"{ATOM}title")
+                    link_el = item.find(f"{ATOM}link")
+                    id_el = item.find(f"{ATOM}id")
+                    title = html.unescape(title_el.text or "") if title_el is not None else ""
                     if not is_relevant(title, groups):
                         continue
                     low = title.lower()
                     if low.startswith("[wtb") or "sold" in low:
                         continue
-                    item_id = f"reddit:{d.get('id')}"
+                    raw_id = (id_el.text if id_el is not None else "") or ""
+                    post_id = raw_id.split("_")[-1]  # "t3_abc123" -> "abc123"
+                    item_id = f"reddit:{post_id}"
                     if item_id in seen_ids:
                         continue
                     seen_ids.add(item_id)
@@ -227,17 +259,14 @@ def search_reddit(registry):
                         "id": item_id,
                         "title": title,
                         "price": parse_price(title),
-                        "url": "https://www.reddit.com" + d.get("permalink", ""),
+                        "url": link_el.get("href") if link_el is not None else "",
                         "source": "r/watchexchange",
                     })
             except Exception as e:
                 resp = getattr(e, "response", None)
-                if resp is not None:
-                    log(f"WARN: Reddit search failed for '{term}': {e} | {describe_response(resp)}")
-                else:
-                    log(f"WARN: Reddit search failed for '{term}': {e}")
+                detail = f" | {describe_response(resp)}" if resp is not None else ""
+                log(f"WARN: Reddit search failed for '{term}': {e}{detail}")
                 RUN_ERRORS.append(f"Reddit '{term}': {e}")
-            time.sleep(1)
     return out
 
 

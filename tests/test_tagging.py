@@ -200,6 +200,37 @@ def test_notify_failure_posts_high_priority_alert():
     assert post.call_args.kwargs["headers"]["Priority"] == "high"
 
 
+def test_search_reddit_parses_rss_feed():
+    """search_reddit reads Reddit's Atom RSS feed: relevance + WTB filter, id strip, price."""
+    from unittest.mock import MagicMock
+    atom = b"""<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <title>[WTS] Longines Master Moonphase 40mm $1750</title>
+    <link href="https://www.reddit.com/r/Watchexchange/comments/abc123/wts_longines/"/>
+    <id>t3_abc123</id>
+  </entry>
+  <entry>
+    <title>[WTB] Longines Master Moonphase wanted</title>
+    <link href="https://www.reddit.com/r/Watchexchange/comments/def456/wtb_longines/"/>
+    <id>t3_def456</id>
+  </entry>
+</feed>"""
+    fake = MagicMock()
+    fake.ok = True
+    fake.content = atom
+    registry = [{"search_terms": ["longines master moonphase"],
+                 "relevance_required_all": [["longines", "master", "moon"]]}]
+    with patch("watch_monitor.requests.get", return_value=fake), \
+         patch("watch_monitor.time.sleep"):
+        out = watch_monitor.search_reddit(registry)
+    assert len(out) == 1                        # [WTB] entry filtered out
+    assert out[0]["id"] == "reddit:abc123"      # "t3_" stripped to match prior dedup ids
+    assert out[0]["price"] == 1750
+    assert "comments/abc123" in out[0]["url"]
+    assert out[0]["source"] == "r/watchexchange"
+
+
 def test_describe_response_includes_status_and_header():
     """describe_response should surface the HTTP status code and relevant headers."""
     from unittest.mock import MagicMock
