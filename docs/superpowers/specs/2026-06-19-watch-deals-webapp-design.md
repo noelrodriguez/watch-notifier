@@ -95,10 +95,9 @@ Array of deal objects, one per unique listing ever seen. Appended on each monito
 ```
 
 **Tagging logic (at ingest):**
-1. Match each new listing's `id` against the registry's `search_terms` to assign `brand`, `model`, `size_mm`.
-2. Search the listing title for each ref string in the matched watch's `refs` array. First match wins; populate `ref_matches`, `dial`, `strap`.
-3. If no ref found in title: `ref_matches = []`, `dial = null`, `strap = null`.
-4. Set `is_hot = price != null and price <= price_ceiling`.
+1. Match the listing's `title` against each registry entry's `search_terms` (substring match) to assign `brand`, `model`, `size_mm`. First registry entry whose search_terms match wins.
+2. Search the listing title for every ref string in the matched watch's `refs` array. Collect all hits into `ref_matches`. Use the first hit to set `dial` and `strap`. If no ref found: `ref_matches = []`, `dial = null`, `strap = null`.
+3. Set `is_hot = price != null and price <= price_ceiling`.
 
 **First-run behavior:** `data/deals.json` is created empty on first run. The silent-baseline behavior (no notifications) is unchanged. The web app shows an empty state: "No deals yet — check back after the next monitor run."
 
