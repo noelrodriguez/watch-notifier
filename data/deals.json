@@ -304,5 +304,21 @@
     "strap": "leather",
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1ubwhjj",
+    "title": "[WTS] Tudor Black Bay Pro Opaline",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1ubwhjj/wts_tudor_black_bay_pro_opaline/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-21T18:21:04.827583+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
