@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import watch_monitor
 from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant
 
 REGISTRY = [
@@ -180,3 +181,20 @@ def test_tag_no_ceiling_does_not_crash():
     result = tag_deal(item, registry)  # must not raise
     assert result["brand"] == "Omega"
     assert result["is_hot"] is True  # no ceiling = infinite ceiling, priced item qualifies
+
+
+def test_source_failure_is_recorded_not_silent():
+    watch_monitor.RUN_ERRORS.clear()
+    registry = [{"search_terms": ["x"], "relevance_required_all": [["x"]]}]
+    with patch("watch_monitor.requests.get", side_effect=Exception("429 Too Many Requests")), \
+         patch("watch_monitor.time.sleep"):
+        out = watch_monitor.search_reddit(registry)
+    assert out == []
+    assert watch_monitor.RUN_ERRORS  # failure surfaced instead of being swallowed
+
+
+def test_notify_failure_posts_high_priority_alert():
+    with patch("watch_monitor.requests.post") as post:
+        watch_monitor.notify_failure(["Reddit 'x': boom"])
+    assert post.called
+    assert post.call_args.kwargs["headers"]["Priority"] == "high"
