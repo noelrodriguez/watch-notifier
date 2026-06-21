@@ -7,6 +7,9 @@
 *.log
 monitor.log
 
+# Local secrets sourced by run_now.sh (NTFY_TOPIC override, TELEGRAM_*)
+.env
+
 # Local setup helpers / progress (not used by the GitHub Actions version)
 setup.command
 setup.bat
