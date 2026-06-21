@@ -39,6 +39,11 @@ REGISTRY_FILE = Path(__file__).parent / "data" / "watches.json"
 MAX_PUSH_PER_RUN = 8          # safety cap so a first run / source glitch can't spam you
 HTTP_TIMEOUT = 20
 UA = "watch-tracker-monitor/1.0 (personal use)"
+
+# Source fetch failures collected during a run. A non-empty list at the end of
+# main() triggers one ntfy alert so a broken scrape (e.g. Reddit 429) isn't silent.
+# ponytail: module-level list, fine for a single-run script; reset at top of main().
+RUN_ERRORS = []
 # ---------------------------------------------------------------------------
 
 
@@ -200,6 +205,7 @@ def search_reddit(registry):
                     })
             except Exception as e:
                 log(f"WARN: Reddit search failed for '{term}': {e}")
+                RUN_ERRORS.append(f"Reddit '{term}': {e}")
             time.sleep(1)
     return out
 
@@ -246,6 +252,7 @@ def search_ebay(registry):
                     })
             except Exception as e:
                 log(f"WARN: eBay search failed for '{term}': {e}")
+                RUN_ERRORS.append(f"eBay '{term}': {e}")
             time.sleep(1)
     return out
 
@@ -265,6 +272,7 @@ def search_chrono24():
                 timeout=HTTP_TIMEOUT)
             if r.status_code != 200 or "captcha" in r.text.lower():
                 log(f"WARN: Chrono24 blocked/non-200 for {url} (status {r.status_code}).")
+                RUN_ERRORS.append(f"Chrono24 blocked/non-200 ({r.status_code}): {url}")
                 continue
             soup = BeautifulSoup(r.text, "html.parser")
             for a in soup.select("a[href*='--id']"):
@@ -284,6 +292,7 @@ def search_chrono24():
                 })
         except Exception as e:
             log(f"WARN: Chrono24 fetch failed for {url}: {e}")
+            RUN_ERRORS.append(f"Chrono24 fetch failed: {e}")
         time.sleep(1)
     return out
 
@@ -334,6 +343,24 @@ def push_telegram(item):
         log(f"WARN: Telegram push failed: {e}")
 
 
+def notify_failure(errors):
+    """Fire ONE ntfy alert summarizing source failures so a broken run isn't silent."""
+    body = "\n".join(errors[:10])
+    if len(errors) > 10:
+        body += f"\n…and {len(errors) - 10} more"
+    headers = {
+        "Title": f"⚠️ Watch monitor: {len(errors)} source error(s)".encode("utf-8"),
+        "Tags": "warning",
+        "Priority": "high",
+    }
+    try:
+        r = requests.post(f"{NTFY_SERVER}/{NTFY_TOPIC}", data=body.encode("utf-8"),
+                          headers=headers, timeout=HTTP_TIMEOUT)
+        r.raise_for_status()
+    except Exception as e:
+        log(f"ERROR: failure-alert ntfy push failed: {e}")
+
+
 # -------------------------------------------------------------------- MAIN ---
 def run_test_push():
     """`python watch_monitor.py --test` — fire one sample alert to confirm your phone receives it."""
@@ -363,6 +390,7 @@ def main():
         log("ERROR: set NTFY_TOPIC (top of file or env var) to your own unique topic first.")
         sys.exit(1)
 
+    RUN_ERRORS.clear()
     seen = load_state()
     first_run = not STATE_FILE.exists()
     registry = load_registry()
@@ -383,6 +411,10 @@ def main():
 
     log(f"Scanned {len(unique)} listings, {len(new_items)} new "
         f"(first_run={first_run}).")
+
+    if RUN_ERRORS:
+        log(f"{len(RUN_ERRORS)} source error(s) this run; sending failure alert.")
+        notify_failure(RUN_ERRORS)
 
     if first_run:
         # Seed baseline silently so we don't blast every existing listing.
@@ -411,4 +443,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise  # config-error / --test exits are intentional, not crashes
+    except Exception as e:
+        log(f"FATAL: monitor crashed: {e}")
+        notify_failure([f"Monitor crashed: {e}"])
+        raise  # re-raise so the GitHub Actions job also shows red
