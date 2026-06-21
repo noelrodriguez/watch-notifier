@@ -167,6 +167,28 @@ def size_signals(size_mm):
     return [f"{size_mm}mm", f"{size_mm} mm"]
 
 
+# ------------------------------------------------------------------ HELPERS --
+_DIAGNOSTIC_HEADERS = {
+    "retry-after", "www-authenticate",
+    "x-ratelimit-remaining", "x-ratelimit-used", "x-ratelimit-reset",
+    "server", "cf-mitigated", "cf-ray",
+}
+
+
+def describe_response(r):
+    """Return a compact diagnostic string for a non-2xx (or blocked) response.
+
+    Captures: status code, filtered headers (rate-limit / anti-bot signals),
+    and the first ~500 chars of the body — enough to diagnose 403/429 causes
+    without blowing up log lines.
+    """
+    hdrs = {k.lower(): v for k, v in r.headers.items()}
+    relevant = {k: v for k, v in hdrs.items()
+                if k in _DIAGNOSTIC_HEADERS or k.startswith("x-reddit-")}
+    body_snippet = (r.text or "")[:500].strip()
+    return f"HTTP {r.status_code} | headers={relevant} | body={body_snippet!r}"
+
+
 # ------------------------------------------------------------------ SOURCES --
 def search_reddit(registry):
     """r/watchexchange via the public JSON endpoint. Reliable, no auth.
@@ -183,7 +205,12 @@ def search_reddit(registry):
                    f"?q={requests.utils.quote(term)}&restrict_sr=on&sort=new&limit=50")
             try:
                 r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
-                r.raise_for_status()
+                if not r.ok:
+                    detail = describe_response(r)
+                    log(f"WARN: Reddit search failed for '{term}': {detail}")
+                    RUN_ERRORS.append(f"Reddit '{term}': HTTP {r.status_code}")
+                    time.sleep(1)
+                    continue
                 for child in r.json().get("data", {}).get("children", []):
                     d = child.get("data", {})
                     title = html.unescape(d.get("title", ""))
@@ -204,7 +231,11 @@ def search_reddit(registry):
                         "source": "r/watchexchange",
                     })
             except Exception as e:
-                log(f"WARN: Reddit search failed for '{term}': {e}")
+                resp = getattr(e, "response", None)
+                if resp is not None:
+                    log(f"WARN: Reddit search failed for '{term}': {e} | {describe_response(resp)}")
+                else:
+                    log(f"WARN: Reddit search failed for '{term}': {e}")
                 RUN_ERRORS.append(f"Reddit '{term}': {e}")
             time.sleep(1)
     return out
@@ -225,7 +256,12 @@ def search_ebay(registry):
                    f"?_nkw={requests.utils.quote(term)}&_sop=10&LH_BIN=1")
             try:
                 r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
-                r.raise_for_status()
+                if not r.ok:
+                    detail = describe_response(r)
+                    log(f"WARN: eBay search failed for '{term}': {detail}")
+                    RUN_ERRORS.append(f"eBay '{term}': HTTP {r.status_code}")
+                    time.sleep(1)
+                    continue
                 soup = BeautifulSoup(r.text, "html.parser")
                 for li in soup.select("li.s-item"):
                     a = li.select_one("a.s-item__link")
@@ -251,7 +287,11 @@ def search_ebay(registry):
                         "source": "eBay",
                     })
             except Exception as e:
-                log(f"WARN: eBay search failed for '{term}': {e}")
+                resp = getattr(e, "response", None)
+                if resp is not None:
+                    log(f"WARN: eBay search failed for '{term}': {e} | {describe_response(resp)}")
+                else:
+                    log(f"WARN: eBay search failed for '{term}': {e}")
                 RUN_ERRORS.append(f"eBay '{term}': {e}")
             time.sleep(1)
     return out
@@ -271,7 +311,8 @@ def search_chrono24():
                 "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"},
                 timeout=HTTP_TIMEOUT)
             if r.status_code != 200 or "captcha" in r.text.lower():
-                log(f"WARN: Chrono24 blocked/non-200 for {url} (status {r.status_code}).")
+                detail = describe_response(r)
+                log(f"WARN: Chrono24 blocked/non-200 for {url}: {detail}")
                 RUN_ERRORS.append(f"Chrono24 blocked/non-200 ({r.status_code}): {url}")
                 continue
             soup = BeautifulSoup(r.text, "html.parser")
@@ -291,7 +332,11 @@ def search_chrono24():
                     "source": "Chrono24",
                 })
         except Exception as e:
-            log(f"WARN: Chrono24 fetch failed for {url}: {e}")
+            resp = getattr(e, "response", None)
+            if resp is not None:
+                log(f"WARN: Chrono24 fetch failed for {url}: {e} | {describe_response(resp)}")
+            else:
+                log(f"WARN: Chrono24 fetch failed for {url}: {e}")
             RUN_ERRORS.append(f"Chrono24 fetch failed: {e}")
         time.sleep(1)
     return out

@@ -7,7 +7,7 @@ from unittest.mock import patch
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import watch_monitor
-from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant
+from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant, describe_response
 
 REGISTRY = [
     {
@@ -198,3 +198,22 @@ def test_notify_failure_posts_high_priority_alert():
         watch_monitor.notify_failure(["Reddit 'x': boom"])
     assert post.called
     assert post.call_args.kwargs["headers"]["Priority"] == "high"
+
+
+def test_describe_response_includes_status_and_header():
+    """describe_response should surface the HTTP status code and relevant headers."""
+    from unittest.mock import MagicMock
+    fake = MagicMock()
+    fake.status_code = 403
+    fake.headers = {
+        "cf-ray": "abc123-SJC",
+        "server": "cloudflare",
+        "content-type": "text/html",  # not in diagnostic set — should be absent
+    }
+    fake.text = "Access denied by Cloudflare"
+    result = describe_response(fake)
+    assert "403" in result
+    assert "abc123-SJC" in result   # cf-ray header value present
+    assert "cloudflare" in result   # server header value present
+    assert "content-type" not in result  # non-diagnostic header filtered out
+    assert "Access denied" in result    # body snippet included
