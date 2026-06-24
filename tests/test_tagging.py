@@ -231,6 +231,36 @@ def test_search_reddit_parses_rss_feed():
     assert out[0]["source"] == "r/watchexchange"
 
 
+def test_default_source_toggles():
+    # Per request: Reddit on (works via RSS), eBay & Chrono24 off by default.
+    assert watch_monitor.ENABLE_REDDIT is True
+    assert watch_monitor.ENABLE_EBAY is False
+    assert watch_monitor.ENABLE_CHRONO24 is False
+
+
+def test_flag_parses_truthy_and_falsy(monkeypatch):
+    monkeypatch.setenv("X_FLAG", "yes")
+    assert watch_monitor._flag("X_FLAG", "0") is True
+    monkeypatch.setenv("X_FLAG", "0")
+    assert watch_monitor._flag("X_FLAG", "1") is False
+    monkeypatch.delenv("X_FLAG", raising=False)
+    assert watch_monitor._flag("X_FLAG", "on") is True   # falls back to default
+
+
+def test_gather_listings_runs_only_enabled_sources():
+    with patch("watch_monitor.ENABLE_REDDIT", True), \
+         patch("watch_monitor.ENABLE_EBAY", False), \
+         patch("watch_monitor.ENABLE_CHRONO24", False), \
+         patch("watch_monitor.search_reddit", return_value=[{"id": "reddit:1"}]) as red, \
+         patch("watch_monitor.search_ebay") as ebay, \
+         patch("watch_monitor.search_chrono24") as chrono:
+        out = watch_monitor.gather_listings([])
+    red.assert_called_once()
+    ebay.assert_not_called()
+    chrono.assert_not_called()
+    assert out == [{"id": "reddit:1"}]
+
+
 def test_describe_response_includes_status_and_header():
     """describe_response should surface the HTTP status code and relevant headers."""
     from unittest.mock import MagicMock
