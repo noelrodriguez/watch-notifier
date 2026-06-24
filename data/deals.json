@@ -340,5 +340,37 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uef94e",
+    "title": "[WTS] 2026 BRAND NEW Tudor Black Bay Pro GMT 79470 $3,700",
+    "price": 3700,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uef94e/wts_2026_brand_new_tudor_black_bay_pro_gmt_79470/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-24T15:35:02.563951+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uegmk7",
+    "title": "[WTS] New 2026 Tudor Black Bay Pro White Opaline 5/26 Ref. 79470 $3,999.00",
+    "price": 3999,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uegmk7/wts_new_2026_tudor_black_bay_pro_white_opaline/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-24T15:35:02.563987+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
