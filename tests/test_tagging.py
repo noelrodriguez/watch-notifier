@@ -528,3 +528,86 @@ def test_parse_price_strict_too_large_returns_none():
 def test_parse_price_strict_boundary_price_returns_value():
     """$2,000 is a plausible price and should be returned correctly."""
     assert parse_price("$2,000") == 2000
+
+
+# ------------------------------------------------------------------ tag_deal: group-hit path (relevance_required_all) ---
+
+# A minimal registry entry that has a relevance_required_all group whose tokens
+# are NOT a contiguous substring found in search_terms, which lets us isolate
+# the group_hit branch in tag_deal.
+REGISTRY_WITH_GROUP = [
+    {
+        "brand": "Longines",
+        "model": "Master Collection Chrono Moonphase",
+        "size_mm": 40,
+        "refs": [
+            {"ref": "L2.673.4.78.6", "dial": "silver", "strap": "bracelet"},
+        ],
+        # search_terms only contain a contiguous phrase that WON'T appear in the
+        # test title ("Collection Triple Date Moonphase" breaks the contiguity).
+        "search_terms": ["longines master moonphase", "longines master chronograph moonphase"],
+        "relevance_required_all": [["longines", "master", "moon"]],
+        "price_ceiling": 2000,
+    }
+]
+
+# Title that matches the group ["longines","master","moon"] but does NOT contain
+# the contiguous search_term "longines master moonphase" (the words "master" and
+# "moonphase" are separated by "Collection Triple Date") and contains no ref.
+_GROUP_TITLE = "[WTS] Longines Master Collection Triple Date Moonphase 40mm box"
+_GROUP_ITEM = {
+    "id": "reddit:zzz",
+    "title": _GROUP_TITLE,
+    "price": 1800,
+    "url": "https://reddit.com/r/Watchexchange/comments/zzz",
+    "source": "r/watchexchange",
+}
+
+
+def test_tag_group_hit_sets_brand_model_size():
+    """A title matching relevance_required_all (all tokens present, non-contiguous)
+    gets brand/model/size_mm populated even when no contiguous search_term matches
+    and no registry ref appears in the title."""
+    result = tag_deal(dict(_GROUP_ITEM), REGISTRY_WITH_GROUP)
+    assert result["brand"] == "Longines"
+    assert result["model"] == "Master Collection Chrono Moonphase"
+    assert result["size_mm"] == 40
+
+
+def test_tag_contiguous_search_term_still_tags():
+    """Regression: a title containing a contiguous search_term continues to tag
+    (the group_hit addition must not break the existing term_hit path)."""
+    item = {**BASE_ITEM, "title": "Longines Master Moonphase 40mm great condition"}
+    result = tag_deal(item, REGISTRY_WITH_GROUP)
+    assert result["brand"] == "Longines"
+    assert result["model"] == "Master Collection Chrono Moonphase"
+
+
+def test_tag_ref_in_title_still_tags():
+    """Regression: a title containing a registry ref continues to tag
+    (the group_hit addition must not break the existing matched_refs path)."""
+    item = {**BASE_ITEM, "title": "Longines L2.673.4.78.6 barely worn box papers"}
+    result = tag_deal(item, REGISTRY_WITH_GROUP)
+    assert result["brand"] == "Longines"
+    assert result["ref_matches"] == ["L2.673.4.78.6"]
+    assert result["dial"] == "silver"
+    assert result["strap"] == "bracelet"
+
+
+def test_tag_unrelated_title_not_tagged_by_group():
+    """Negative: a title that matches neither a search_term, nor a ref, nor the
+    relevance group returns brand=None — the group path must not match everything."""
+    item = {**BASE_ITEM, "title": "Rolex Submariner Date blue dial box papers"}
+    result = tag_deal(item, REGISTRY_WITH_GROUP)
+    assert result["brand"] is None
+    assert result["model"] is None
+    assert result["preferred_signals"] == []
+    assert result["is_hot"] is False
+
+
+def test_tag_group_hit_populates_preferred_signals_for_size():
+    """A group-matched title that contains '40mm' gets preferred_signals populated
+    (the size signals branch runs for any match path, including group_hit)."""
+    item = {**_GROUP_ITEM, "title": "[WTS] Longines Master Collection Triple Date Moonphase 40mm"}
+    result = tag_deal(item, REGISTRY_WITH_GROUP)
+    assert "40mm" in result["preferred_signals"]

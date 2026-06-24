@@ -111,7 +111,11 @@ def tag_deal(item, registry):
     for entry in registry:
         matched_refs = [r for r in entry.get("refs", []) if r["ref"].lower() in title_lower]
         term_hit = any(term in title_lower for term in entry.get("search_terms", []))
-        if term_hit or matched_refs:
+        # Also accept the same relevance gate that let the listing in: search_terms
+        # are contiguous substrings, but real titles read "Master Collection ...
+        # Moonphase", so match on relevance_required_all (all tokens present) too.
+        group_hit = is_relevant(item["title"], entry.get("relevance_required_all", []))
+        if term_hit or matched_refs or group_hit:
             item["brand"] = entry.get("brand")
             item["model"] = entry.get("model")
             item["size_mm"] = entry.get("size_mm")
