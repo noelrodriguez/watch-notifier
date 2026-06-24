@@ -7,7 +7,7 @@ from unittest.mock import patch
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import watch_monitor
-from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant, describe_response
+from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant, describe_response, parse_price, _to_price
 
 REGISTRY = [
     {
@@ -423,3 +423,108 @@ def test_enrich_reddit_prices_fills_only_priceless_reddit_items():
     mock_fetch.assert_called_once_with(item_a["url"])
     # politeness sleep called once for the one fetch
     mock_sleep.assert_called_once_with(1)
+
+
+# ------------------------------------------------------------------ parse_price / _to_price ---
+
+# 1. Strict mode (default) parses explicit $ amounts
+def test_parse_price_strict_dollar_with_comma():
+    """$1,750 in a title is parsed and comma is stripped."""
+    assert parse_price("$1,750 box and papers") == 1750
+
+
+def test_parse_price_strict_dollar_no_comma():
+    """$2000 (no comma) is also parsed correctly in strict mode."""
+    assert parse_price("WTS Longines $2000 shipped") == 2000
+
+
+def test_parse_price_strict_dollar_with_space():
+    """$ 1850 (space after dollar sign) is tolerated by the regex."""
+    assert parse_price("$ 1850 OBO") == 1850
+
+
+# 2. Strict mode returns None for bare numbers (no $) — protects against
+#    refs, years, and sizes found in listing titles
+def test_parse_price_strict_rejects_bare_number_in_title():
+    """A realistic Longines title with ref, year, and size — no $ — returns None."""
+    assert parse_price("Longines Master 40mm ref L2.673.4.78.3 2025") is None
+
+
+def test_parse_price_strict_rejects_year():
+    """A bare year like 2025 with no $ must return None."""
+    assert parse_price("Bought in 2025") is None
+
+
+def test_parse_price_strict_rejects_size_only():
+    """A bare size like 40mm with no $ must return None."""
+    assert parse_price("40mm case") is None
+
+
+# 3. Loose mode: cue-then-number patterns
+def test_parse_price_loose_asking_number():
+    """'Asking 3750' in a seller comment body is matched in loose mode."""
+    assert parse_price("Asking 3750", loose=True) == 3750
+
+
+def test_parse_price_loose_price_colon_number():
+    """'price: 2100' is matched in loose mode."""
+    assert parse_price("price: 2100", loose=True) == 2100
+
+
+def test_parse_price_loose_selling_for_number():
+    """'selling for 1750 shipped' is matched in loose mode."""
+    assert parse_price("selling for 1750 shipped", loose=True) == 1750
+
+
+# 4. Loose mode: number-then-cue patterns
+def test_parse_price_loose_number_obo():
+    """'3,250 obo' (number then cue, comma included) is matched in loose mode."""
+    assert parse_price("3,250 obo", loose=True) == 3250
+
+
+def test_parse_price_loose_number_firm():
+    """'1750 firm' (number then cue) is matched in loose mode."""
+    assert parse_price("1750 firm", loose=True) == 1750
+
+
+def test_parse_price_loose_number_shipped():
+    """'2800 shipped' (number then cue) is matched in loose mode."""
+    assert parse_price("2800 shipped", loose=True) == 2800
+
+
+# 5. Loose mode still returns None when there's no $ and no price cue,
+#    even when numbers are present (year / size / ref)
+def test_parse_price_loose_no_cue_no_dollar_returns_none():
+    """A body with only ref, year, and size — no $ and no cue — returns None in loose mode."""
+    assert parse_price("Bought in 2025, 40mm, ref L2.673.4.78.3", loose=True) is None
+
+
+# 6. Plausibility bounds via _to_price
+def test_to_price_too_small_returns_none():
+    """A number below 100 is not a plausible watch price."""
+    assert _to_price("50") is None
+
+
+def test_to_price_too_large_returns_none():
+    """A number above 100000 is not a plausible watch price."""
+    assert _to_price("250000") is None
+
+
+def test_to_price_normal_returns_int():
+    """A normal watch price like 2,000 is parsed to an int."""
+    assert _to_price("2,000") == 2000
+
+
+def test_parse_price_strict_too_small_returns_none():
+    """$50 is below the plausibility floor; parse_price must return None."""
+    assert parse_price("$50") is None
+
+
+def test_parse_price_strict_too_large_returns_none():
+    """$250000 exceeds the plausibility ceiling; parse_price must return None."""
+    assert parse_price("$250000") is None
+
+
+def test_parse_price_strict_boundary_price_returns_value():
+    """$2,000 is a plausible price and should be returned correctly."""
+    assert parse_price("$2,000") == 2000

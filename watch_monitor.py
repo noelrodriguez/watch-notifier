@@ -150,16 +150,42 @@ def save_deals(new_items):
     DEALS_FILE.write_text(json.dumps(existing, indent=2))
 
 
-def parse_price(text):
-    """Return the first USD price found as an int, or None."""
+# Words sellers use around a price, for $-less detection in comment bodies.
+_PRICE_CUE = r"asking|price|selling|sell|firm|obo|shipped|net|usd|best offer"
+
+
+def _to_price(s):
+    """'1,750' -> 1750 if it's a plausible watch price (100..100000), else None."""
+    try:
+        n = int(s.replace(",", ""))
+    except ValueError:
+        return None
+    return n if 100 <= n <= 100000 else None
+
+
+def parse_price(text, loose=False):
+    """Return the first USD price found as an int, or None.
+
+    Strict mode (default, used on titles/listings) only matches an explicit
+    "$" amount — titles are full of refs/years/sizes, so a bare number there is
+    not safely a price. loose=True (used on a seller's comment body) also matches
+    a number tied to a price cue like "asking 3750" or "3750 shipped", because
+    on r/watchexchange the price is often stated that way without a "$".
+    """
     if not text:
         return None
     m = re.search(r"\$\s?([0-9][0-9,]{2,7})", text)
     if m:
-        try:
-            return int(m.group(1).replace(",", ""))
-        except ValueError:
-            return None
+        return _to_price(m.group(1))
+    if loose:
+        # cue then number: "asking 3750", "price: 1,750", "selling for 1750"
+        m = re.search(rf"(?:{_PRICE_CUE})\D{{0,10}}?([0-9][0-9,]{{2,7}})", text, re.I)
+        if m and _to_price(m.group(1)) is not None:
+            return _to_price(m.group(1))
+        # number then cue: "3750 shipped", "1750 obo", "3,750 firm"
+        m = re.search(rf"([0-9][0-9,]{{2,7}})\s*(?:{_PRICE_CUE})", text, re.I)
+        if m:
+            return _to_price(m.group(1))
     return None
 
 
@@ -493,7 +519,7 @@ def fetch_op_price(post_url):
         for c in soup.select(".commentarea div.comment"):
             if c.select_one("a.author.submitter"):           # comment authored by the OP
                 body = c.select_one(".entry .usertext-body")
-                price = parse_price(body.get_text(" ", strip=True)) if body else None
+                price = parse_price(body.get_text(" ", strip=True), loose=True) if body else None
                 if price is not None:
                     return price
     except Exception as e:
