@@ -278,3 +278,148 @@ def test_describe_response_includes_status_and_header():
     assert "cloudflare" in result   # server header value present
     assert "content-type" not in result  # non-diagnostic header filtered out
     assert "Access denied" in result    # body snippet included
+
+
+# ------------------------------------------------------------------ fetch_op_price / enrich_reddit_prices ---
+
+def _make_old_reddit_html(op_price_text, non_op_price_text=None):
+    """Build a minimal old.reddit-like HTML string for fetch_op_price tests.
+
+    Contains one OP comment (has 'author submitter' class on the author link) and
+    optionally one non-OP comment (author link lacks 'submitter').
+    """
+    non_op_comment = ""
+    if non_op_price_text:
+        non_op_comment = f"""
+        <div class="comment">
+          <div class="entry">
+            <p class="tagline"><a class="author">other_user</a></p>
+            <div class="usertext-body">{non_op_price_text}</div>
+          </div>
+        </div>"""
+
+    return f"""<html><body>
+    <div class="commentarea">
+      {non_op_comment}
+      <div class="comment">
+        <div class="entry">
+          <p class="tagline"><a class="author submitter">op_user</a></p>
+          <div class="usertext-body">{op_price_text}</div>
+        </div>
+      </div>
+    </div>
+    </body></html>"""
+
+
+def _make_no_submitter_html():
+    """Build HTML where no comment has the submitter class."""
+    return """<html><body>
+    <div class="commentarea">
+      <div class="comment">
+        <div class="entry">
+          <p class="tagline"><a class="author">some_user</a></p>
+          <div class="usertext-body">No price here at all</div>
+        </div>
+      </div>
+    </div>
+    </body></html>"""
+
+
+def test_fetch_op_price_returns_price_from_submitter_comment():
+    """fetch_op_price returns the price from the OP (submitter) comment and ignores
+    a non-submitter comment that has a different price."""
+    from unittest.mock import MagicMock
+    html = _make_old_reddit_html(
+        op_price_text="Asking $1850 shipped",
+        non_op_price_text="I saw this for $999 elsewhere",
+    )
+    fake = MagicMock()
+    fake.ok = True
+    fake.text = html
+    with patch("watch_monitor.requests.get", return_value=fake):
+        price = watch_monitor.fetch_op_price(
+            "https://www.reddit.com/r/Watchexchange/comments/abc/wts_watch/"
+        )
+    assert price == 1850  # OP price, not the non-OP $999
+
+
+def test_fetch_op_price_returns_none_when_no_submitter_comment():
+    """fetch_op_price returns None when no comment has the submitter CSS class."""
+    from unittest.mock import MagicMock
+    fake = MagicMock()
+    fake.ok = True
+    fake.text = _make_no_submitter_html()
+    with patch("watch_monitor.requests.get", return_value=fake):
+        price = watch_monitor.fetch_op_price(
+            "https://www.reddit.com/r/Watchexchange/comments/abc/wts_watch/"
+        )
+    assert price is None
+
+
+def test_fetch_op_price_returns_none_on_non_ok_response():
+    """fetch_op_price returns None when the HTTP response is not ok."""
+    from unittest.mock import MagicMock
+    fake = MagicMock()
+    fake.ok = False
+    fake.status_code = 403
+    fake.headers = {}
+    fake.text = "Forbidden"
+    with patch("watch_monitor.requests.get", return_value=fake):
+        price = watch_monitor.fetch_op_price(
+            "https://www.reddit.com/r/Watchexchange/comments/abc/wts_watch/"
+        )
+    assert price is None
+
+
+def test_fetch_op_price_returns_none_and_makes_no_request_for_empty_url():
+    """fetch_op_price returns None immediately and performs no network call for an empty URL."""
+    with patch("watch_monitor.requests.get") as mock_get:
+        price = watch_monitor.fetch_op_price("")
+    assert price is None
+    mock_get.assert_not_called()
+
+
+def test_enrich_reddit_prices_fills_only_priceless_reddit_items():
+    """enrich_reddit_prices sets price only on r/watchexchange items with price=None;
+    items that already have a price, or come from a different source, are untouched."""
+    from unittest.mock import MagicMock, call
+
+    item_a = {  # reddit, no price → should be filled
+        "id": "reddit:111",
+        "title": "WTS watch A",
+        "price": None,
+        "url": "https://reddit.com/r/Watchexchange/comments/111/",
+        "source": "r/watchexchange",
+    }
+    item_b = {  # reddit, already has a price → must NOT be touched
+        "id": "reddit:222",
+        "title": "WTS watch B",
+        "price": 1500,
+        "url": "https://reddit.com/r/Watchexchange/comments/222/",
+        "source": "r/watchexchange",
+    }
+    item_c = {  # non-reddit, no price → must NOT be touched
+        "id": "ebay:333",
+        "title": "eBay watch C",
+        "price": None,
+        "url": "https://ebay.com/itm/333",
+        "source": "eBay",
+    }
+
+    items = [item_a, item_b, item_c]
+
+    with patch("watch_monitor.fetch_op_price", return_value=1850) as mock_fetch, \
+         patch("watch_monitor.time.sleep") as mock_sleep:
+        watch_monitor.enrich_reddit_prices(items)
+
+    # Only item_a (priceless reddit) should have been enriched
+    assert items[0]["price"] == 1850
+    # item_b already had a price — must be unchanged
+    assert items[1]["price"] == 1500
+    # item_c is not a reddit source — must remain None
+    assert items[2]["price"] is None
+
+    # fetch_op_price called exactly once, with item_a's url
+    mock_fetch.assert_called_once_with(item_a["url"])
+    # politeness sleep called once for the one fetch
+    mock_sleep.assert_called_once_with(1)
