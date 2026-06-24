@@ -40,6 +40,9 @@ REGISTRY_FILE = Path(__file__).parent / "data" / "watches.json"
 MAX_PUSH_PER_RUN = 8          # safety cap so a first run / source glitch can't spam you
 HTTP_TIMEOUT = 20
 UA = "watch-tracker-monitor/1.0 (personal use)"
+# Browser-like UA for old.reddit HTML (used to recover OP-comment prices).
+BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 
 
 def _flag(name, default):
@@ -469,6 +472,48 @@ def run_test_push():
     sys.exit(0 if ok else 1)
 
 
+def fetch_op_price(post_url):
+    """Best-effort: return the asking price from the OP's comment on a thread, or None.
+
+    On r/watchexchange the price is usually in the seller's (OP's) own comment, which
+    the search RSS feed never exposes. old.reddit server-renders the full comment tree
+    and tags OP comments with the 'submitter' class, so we fetch the thread there and
+    parse the price from the OP's comment. Any failure returns None — the listing still
+    links through, so a miss just leaves the price blank (not a hard error).
+    """
+    if not post_url:
+        return None
+    old_url = re.sub(r"^https?://(www\.)?reddit\.com", "https://old.reddit.com", post_url)
+    try:
+        r = requests.get(old_url, headers={"User-Agent": BROWSER_UA}, timeout=HTTP_TIMEOUT)
+        if not r.ok:
+            log(f"WARN: OP-price fetch failed for {post_url}: {describe_response(r)}")
+            return None
+        soup = BeautifulSoup(r.text, "html.parser")
+        for c in soup.select(".commentarea div.comment"):
+            if c.select_one("a.author.submitter"):           # comment authored by the OP
+                body = c.select_one(".entry .usertext-body")
+                price = parse_price(body.get_text(" ", strip=True)) if body else None
+                if price is not None:
+                    return price
+    except Exception as e:
+        log(f"WARN: OP-price fetch error for {post_url}: {e}")
+    return None
+
+
+def enrich_reddit_prices(items):
+    """Fill in missing prices for Reddit listings from the OP's price comment.
+
+    Runs only for price-less r/watchexchange items (the minority), one extra
+    old.reddit fetch each with a politeness delay. Best-effort: a miss leaves the
+    price None and the listing still links through.
+    """
+    for it in items:
+        if it.get("price") is None and it.get("source") == "r/watchexchange":
+            it["price"] = fetch_op_price(it["url"])
+            time.sleep(1)
+
+
 def gather_listings(registry):
     """Run each ENABLED source and return the combined raw listings.
 
@@ -511,9 +556,6 @@ def main():
         unique[it["id"]] = it
     new_items = [it for it in unique.values() if it["id"] not in seen]
 
-    # Cheapest first (None prices sort last)
-    new_items.sort(key=lambda x: (x.get("price") is None, x.get("price") or 0))
-
     log(f"Scanned {len(unique)} listings, {len(new_items)} new "
         f"(first_run={first_run}).")
 
@@ -527,6 +569,11 @@ def main():
         log("First run: baseline saved, no notifications sent. "
             "Future runs will alert on genuinely new listings.")
         return
+
+    # Recover missing prices from the OP's price comment (new Reddit items only),
+    # then sort cheapest-first so recovered prices affect ordering and the push cap.
+    enrich_reddit_prices(new_items)
+    new_items.sort(key=lambda x: (x.get("price") is None, x.get("price") or 0))
 
     tagged_new = [tag_deal(it, registry) for it in new_items]
 
