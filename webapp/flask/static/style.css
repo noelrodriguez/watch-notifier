@@ -180,19 +180,7 @@ body {
 .result-count { font-size: 11px; color: #444; }
 .result-count span { color: #c9a84c; }
 
-.sort-row { display: flex; gap: 8px; align-items: center; }
-.sort-label { font-size: 10px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
-.sort-select {
-  background: #111120;
-  border: 1px solid #252535;
-  color: #888;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  appearance: none;
-  cursor: pointer;
-  outline: none;
-}
+.sort-hint { font-size: 10px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
 
 /* ── Table ── */
 .table-wrap { padding: 0 20px 40px; }
@@ -210,6 +198,13 @@ thead th {
   white-space: nowrap;
   border-bottom: 1px solid #1e1e2e;
 }
+
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: #e0c060; }
+/* Neutral indicator on sortable columns; ▲/▼ on the active one. */
+th.sortable::after { content: ' ↕'; opacity: 0.25; font-size: 8px; }
+th.sortable.sorted[data-dir="asc"]::after  { content: ' ▲'; opacity: 1; }
+th.sortable.sorted[data-dir="desc"]::after { content: ' ▼'; opacity: 1; }
 
 tbody tr {
   border-bottom: 1px solid #0f0f1a;

@@ -99,14 +99,7 @@
 
     <div class="toolbar">
       <div class="result-count" id="result-count">Loading…</div>
-      <div class="sort-row">
-        <span class="sort-label">Sort</span>
-        <select class="sort-select" id="sort-select">
-          <option value="newest">Newest first</option>
-          <option value="price-asc">Price: low to high</option>
-          <option value="price-desc">Price: high to low</option>
-        </select>
-      </div>
+      <div class="sort-hint">Click a column to sort</div>
     </div>
 
     <div class="table-wrap">
@@ -114,14 +107,14 @@
         <thead>
           <tr>
             <th></th>
-            <th>Price</th>
-            <th>Title</th>
-            <th>Brand</th>
-            <th>Model</th>
-            <th>Ref</th>
-            <th>Dial / Strap</th>
-            <th>Source</th>
-            <th>Seen</th>
+            <th class="sortable" data-sort="price">Price</th>
+            <th class="sortable" data-sort="title">Title</th>
+            <th class="sortable" data-sort="brand">Brand</th>
+            <th class="sortable" data-sort="model">Model</th>
+            <th class="sortable" data-sort="ref">Ref</th>
+            <th class="sortable" data-sort="dial">Dial / Strap</th>
+            <th class="sortable" data-sort="source">Source</th>
+            <th class="sortable" data-sort="date_seen">Seen</th>
           </tr>
         </thead>
         <tbody id="deals-tbody"></tbody>

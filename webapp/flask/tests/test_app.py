@@ -22,6 +22,16 @@ def test_index_returns_200(client):
     assert b"Watch Deals" in r.data
 
 
+def test_index_has_sortable_headers_not_dropdown(client):
+    """Sorting is via clickable column headers, not the old sort dropdown."""
+    r = client.get("/")
+    html = r.data
+    assert b'id="sort-select"' not in html          # dropdown removed
+    assert b'data-sort="price"' in html             # headers are sortable
+    assert b'data-sort="date_seen"' in html
+    assert html.count(b'class="sortable"') == 8     # all 8 data columns
+
+
 def test_api_deals_empty_when_no_file(client, tmp_path):
     with patch("app.DATA_DIR", tmp_path):
         r = client.get("/api/deals")
