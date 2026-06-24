@@ -14,7 +14,9 @@
     ],
     "dial": "silver",
     "strap": "bracelet",
-    "preferred_signals": [],
+    "preferred_signals": [
+      "40mm"
+    ],
     "is_hot": true
   },
   {
@@ -32,7 +34,9 @@
     ],
     "dial": "ivory",
     "strap": "leather",
-    "preferred_signals": [],
+    "preferred_signals": [
+      "40mm"
+    ],
     "is_hot": false
   },
   {
@@ -60,14 +64,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1tzv0do/wts_longines_master_collection_triple_date/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475569+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": false,
-    "preferred_signals": []
+    "is_hot": true,
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1t9n0w5",
@@ -76,14 +82,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1t9n0w5/wts_longines_master_collection_moonphase_l2909478/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475599+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": false,
-    "preferred_signals": []
+    "is_hot": true,
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1tqmntj",
@@ -92,13 +100,13 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1tqmntj/wts_longines_master_collection_triple_date/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475789+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": false,
+    "is_hot": true,
     "preferred_signals": []
   },
   {
@@ -108,14 +116,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1u7vezp/wts_longines_master_collection_triple_date/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475797+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": false,
-    "preferred_signals": []
+    "is_hot": true,
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1ti65u2",
@@ -124,13 +134,13 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1ti65u2/wts_longines_master_collection_triple_date/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475802+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": false,
+    "is_hot": true,
     "preferred_signals": []
   },
   {
@@ -180,14 +190,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1u1nxlp/wts_longines_master_collection_triple_date/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475829+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": false,
-    "preferred_signals": []
+    "is_hot": true,
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1tviyqb",
@@ -196,14 +208,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1tviyqb/wts_longines_master_collection_triple_date/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475834+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
     "is_hot": false,
-    "preferred_signals": []
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1ub9yki",
@@ -230,14 +244,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1ub45g1/wts_longines_master_collection_triple_calender/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475846+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
     "is_hot": true,
-    "preferred_signals": []
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1u7n0kl",
@@ -246,13 +262,13 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1u7n0kl/wts_longines_master_collection_moonphase_42mm/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475852+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": true,
+    "is_hot": false,
     "preferred_signals": []
   },
   {
@@ -262,14 +278,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1u41g2u/wts_longines_master_collection_triple_calender/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475863+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
     "is_hot": true,
-    "preferred_signals": []
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1ttatfj",
@@ -278,14 +296,16 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1ttatfj/wts_2025_longines_40mm_master_collection_chrono/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-21T08:59:04.475868+00:00",
-    "brand": null,
-    "model": null,
-    "size_mm": null,
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
     "ref_matches": [],
     "dial": null,
     "strap": null,
-    "is_hot": true,
-    "preferred_signals": []
+    "is_hot": false,
+    "preferred_signals": [
+      "40mm"
+    ]
   },
   {
     "id": "reddit:1tq9k01",
