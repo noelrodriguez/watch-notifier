@@ -41,6 +41,19 @@ MAX_PUSH_PER_RUN = 8          # safety cap so a first run / source glitch can't 
 HTTP_TIMEOUT = 20
 UA = "watch-tracker-monitor/1.0 (personal use)"
 
+
+def _flag(name, default):
+    """Read a boolean toggle from the environment ("1/true/yes/on" = enabled)."""
+    return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
+
+
+# Per-source toggles. Flip the default here or set the env var (e.g. ENABLE_EBAY=1).
+# Reddit is on (it works via the RSS feed); eBay (Akamai-blocked) and Chrono24
+# (anti-bot) are off by default until they're working again.
+ENABLE_REDDIT   = _flag("ENABLE_REDDIT", "1")
+ENABLE_EBAY     = _flag("ENABLE_EBAY", "0")
+ENABLE_CHRONO24 = _flag("ENABLE_CHRONO24", "0")
+
 # Source fetch failures collected during a run. A non-empty list at the end of
 # main() triggers one ntfy alert so a broken scrape (e.g. Reddit 429) isn't silent.
 # ponytail: module-level list, fine for a single-run script; reset at top of main().
@@ -456,6 +469,27 @@ def run_test_push():
     sys.exit(0 if ok else 1)
 
 
+def gather_listings(registry):
+    """Run each ENABLED source and return the combined raw listings.
+
+    Sources are toggled via the ENABLE_* config flags so a blocked source
+    (e.g. eBay/Chrono24 anti-bot) can be turned off without code surgery.
+    """
+    enabled = [n for n, on in (("reddit", ENABLE_REDDIT),
+                               ("eBay", ENABLE_EBAY),
+                               ("Chrono24", ENABLE_CHRONO24)) if on]
+    log(f"Sources enabled: {', '.join(enabled) if enabled else 'none'}")
+
+    found = []
+    if ENABLE_REDDIT:
+        found.extend(search_reddit(registry))
+    if ENABLE_EBAY:
+        found.extend(search_ebay(registry))
+    if ENABLE_CHRONO24:
+        found.extend(search_chrono24())
+    return found
+
+
 def main():
     if "--test" in sys.argv:
         run_test_push()
@@ -469,10 +503,7 @@ def main():
     first_run = not STATE_FILE.exists()
     registry = load_registry()
 
-    found = []
-    found.extend(search_reddit(registry))
-    found.extend(search_ebay(registry))
-    found.extend(search_chrono24())
+    found = gather_listings(registry)
 
     # Dedup within this run and against history
     unique = {}
