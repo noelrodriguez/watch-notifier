@@ -372,5 +372,53 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uesncy",
+    "title": "[WTS] Tudor Black Bay Pro Full Kit",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uesncy/wts_tudor_black_bay_pro_full_kit/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-24T23:07:05.667626+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uerzbj",
+    "title": "[WTS] Tudor Black Bay Pro | BNIB Complete Set | Warranty Card 06/2026",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uerzbj/wts_tudor_black_bay_pro_bnib_complete_set/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-24T23:07:05.667697+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uerz63",
+    "title": "[WTS/WTT] Tudor Black Bay Pro - Opaline - Full Set Box Card Warranty Ma-USA",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uerz63/wtswtt_tudor_black_bay_pro_opaline_full_set_box/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-24T23:07:05.667715+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
