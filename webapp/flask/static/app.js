@@ -2,6 +2,9 @@
 
 let allDeals = [];
 
+/* Active column sort. Default = newest first (date_seen, descending). */
+let sortState = { column: 'date_seen', dir: 'desc' };
+
 /* ── Data fetch ── */
 async function fetchData() {
   try {
@@ -117,7 +120,6 @@ function getFilters() {
     strap:  document.getElementById('strap-select').value,
     dateRange: document.getElementById('date-select').value,
     sources: checkedSources,
-    sort: document.getElementById('sort-select').value,
   };
 }
 
@@ -140,12 +142,56 @@ function applyFilters(deals, f) {
   });
 }
 
-function sortDeals(deals, sort) {
+/* Value a column sorts on (handles the cells that aren't plain fields). */
+function sortValue(deal, column) {
+  if (column === 'price')   return deal.price ?? null;            // numeric, null = unpriced
+  if (column === 'ref')     return (deal.ref_matches && deal.ref_matches[0]) || '';
+  if (column === 'dial')    return deal.dial || '';
+  return deal[column] || '';                                      // title/brand/model/source/date_seen
+}
+
+function sortDeals(deals) {
+  const { column, dir } = sortState;
+  const mul = dir === 'asc' ? 1 : -1;
   const s = [...deals];
-  if (sort === 'price-asc')  s.sort((a, b) => (a.price ?? Infinity)  - (b.price ?? Infinity));
-  if (sort === 'price-desc') s.sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
-  if (sort === 'newest')     s.sort((a, b) => (b.date_seen || '').localeCompare(a.date_seen || ''));
+  s.sort((a, b) => {
+    const av = sortValue(a, column);
+    const bv = sortValue(b, column);
+    // Empty/unknown values always sort last, regardless of direction.
+    const aEmpty = av === null || av === '';
+    const bEmpty = bv === null || bv === '';
+    if (aEmpty && bEmpty) return 0;
+    if (aEmpty) return 1;
+    if (bEmpty) return -1;
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * mul;
+    return String(av).localeCompare(String(bv)) * mul;
+  });
   return s;
+}
+
+/* Clicking a header sorts by it (asc); clicking the active one flips direction. */
+function setupSortHeaders() {
+  document.querySelectorAll('th.sortable').forEach((th) => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (sortState.column === col) {
+        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortState = { column: col, dir: 'asc' };
+      }
+      updateSortIndicators();
+      render();
+    });
+  });
+  updateSortIndicators();
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll('th.sortable').forEach((th) => {
+    const active = th.dataset.sort === sortState.column;
+    th.classList.toggle('sorted', active);
+    th.setAttribute('data-dir', active ? sortState.dir : '');
+  });
 }
 
 function dateCutoff(range) {
@@ -160,7 +206,7 @@ function dateCutoff(range) {
 function render() {
   const f = getFilters();
   const filtered = applyFilters(allDeals, f);
-  const sorted   = sortDeals(filtered, f.sort);
+  const sorted   = sortDeals(filtered);
 
   const tbody   = document.getElementById('deals-tbody');
   const empty   = document.getElementById('empty-state');
@@ -251,7 +297,7 @@ function setupListeners() {
   );
 
   ['brand-select', 'model-select', 'size-select', 'dial-select',
-   'strap-select', 'date-select', 'sort-select'].forEach((id) => {
+   'strap-select', 'date-select'].forEach((id) => {
     document.getElementById(id).addEventListener('change', () => {
       if (id === 'brand-select') updateModelDropdown();
       render();
@@ -278,6 +324,8 @@ function setupListeners() {
       cb.checked = true;
       cb.closest('.checkbox-row').querySelector('.checkbox-box').classList.add('checked');
     });
+    sortState = { column: 'date_seen', dir: 'desc' };  // back to default (newest first)
+    updateSortIndicators();
     render();
   });
 }
@@ -285,6 +333,7 @@ function setupListeners() {
 /* ── Boot ── */
 document.addEventListener('DOMContentLoaded', () => {
   setupListeners();
+  setupSortHeaders();
   setupWatchesListeners();
   fetchData();
 });
