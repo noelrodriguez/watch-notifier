@@ -454,5 +454,21 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1ufax6o",
+    "title": "[WTS] 2026 BRAND NEW Tudor Black Bay Pro GMT 79470 $3,950",
+    "price": 3950,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1ufax6o/wts_2026_brand_new_tudor_black_bay_pro_gmt_79470/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-25T16:29:01.734259+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
