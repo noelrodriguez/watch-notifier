@@ -420,5 +420,39 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uew5l3",
+    "title": "[WTS] Longines Master Collection, Triple Date Moonphase 40mm Box and Card - $1,790",
+    "price": 1790,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uew5l3/wts_longines_master_collection_triple_date/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-25T03:53:02.737027+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": [
+      "40mm"
+    ]
+  },
+  {
+    "id": "reddit:1uex7dl",
+    "title": "[WTS] Tudor Black Bay Pro GMT \u2013 Ref. 79470 \u2013 Full Set \u2013 Minty \u2013 08/2024",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uex7dl/wts_tudor_black_bay_pro_gmt_ref_79470_full_set/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-25T03:53:02.737083+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
