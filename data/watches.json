@@ -69,5 +69,31 @@
     ],
     "price_ceiling": 3000,
     "notes": ""
+  },
+  {
+    "id": "tag-heuer-carrera-chrono",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "search_terms": [
+      "tag heuer carrera chrono"
+    ],
+    "relevance_required_all": [
+      [
+        "tag",
+        "heuer",
+        "carrera",
+        "chrono"
+      ]
+    ],
+    "refs": [
+      {
+        "ref": "CBS2216.BA0048",
+        "dial": "",
+        "strap": ""
+      }
+    ],
+    "price_ceiling": 5000,
+    "notes": ""
   }
 ]
