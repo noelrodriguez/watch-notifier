@@ -511,7 +511,7 @@
   {
     "id": "reddit:1ub0fg4",
     "title": "[WTS] Tag Heuer Carrera Skeleton Chronograph CAR2A1W",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1ub0fg4/wts_tag_heuer_carrera_skeleton_chronograph_car2a1w/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-26T08:02:04.599248+00:00",
@@ -523,12 +523,12 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 4
+    "price_attempts": 5
   },
   {
     "id": "reddit:1u9scv9",
     "title": "[WTS] Tag Heuer Carrera Chronograph CV2111",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1u9scv9/wts_tag_heuer_carrera_chronograph_cv2111/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-26T08:02:04.599261+00:00",
@@ -540,6 +540,23 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 4
+    "price_attempts": 5
+  },
+  {
+    "id": "reddit:1uget8f",
+    "title": "[WTS] 2026 / Longines / Master Collection Chrono Moonphase / 42mm",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uget8f/wts_2026_longines_master_collection_chrono/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-26T19:54:02.902488+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": [],
+    "price_attempts": 1
   }
 ]
