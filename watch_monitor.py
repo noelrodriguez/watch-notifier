@@ -544,6 +544,46 @@ def enrich_reddit_prices(items):
             time.sleep(1)
 
 
+PRICE_BACKFILL_MAX_ATTEMPTS = 5
+PRICE_GAVE_UP = -1  # deals.json sentinel: retried MAX_ATTEMPTS times, never found a price
+
+
+def backfill_prices():
+    """Retry OP-comment price recovery for already-saved price-less Reddit deals.
+
+    The RSS feed indexes a post at submission, but the seller posts the price in a
+    comment moments later — so a deal first seen in that gap is saved with price
+    None. Without this, dedup means it's never revisited and the blank is permanent.
+    Re-fetch those here, up to PRICE_BACKFILL_MAX_ATTEMPTS times; on the final miss,
+    flag price = PRICE_GAVE_UP (-1) so a persistent blank is visible in the web app
+    instead of an indistinguishable null.
+    """
+    if not DEALS_FILE.exists():
+        return
+    try:
+        deals = json.loads(DEALS_FILE.read_text())
+    except Exception as e:
+        log(f"WARN: could not read deals file for backfill ({e}).")
+        return
+    changed = False
+    for d in deals:
+        if d.get("source") != "r/watchexchange" or d.get("price") is not None:
+            continue
+        attempts = d.get("price_attempts", 0) + 1
+        d["price_attempts"] = attempts
+        price = fetch_op_price(d.get("url"))
+        if price is not None:
+            d["price"] = price
+            log(f"  backfilled price ${price} for {d['id']} (attempt {attempts})")
+        elif attempts >= PRICE_BACKFILL_MAX_ATTEMPTS:
+            d["price"] = PRICE_GAVE_UP
+            log(f"  gave up on price for {d['id']} after {attempts} attempts; flagged {PRICE_GAVE_UP}")
+        changed = True
+        time.sleep(1)
+    if changed:
+        DEALS_FILE.write_text(json.dumps(deals, indent=2))
+
+
 def gather_listings(registry):
     """Run each ENABLED source and return the combined raw listings.
 
@@ -617,6 +657,10 @@ def main():
 
     # Save ALL new deals (including overflow beyond MAX_PUSH_PER_RUN) to the web app DB.
     save_deals(tagged_new)
+
+    # Retry price recovery for stored Reddit deals whose price was blank when first
+    # seen (the RSS feed often indexes a post before the OP posts the price comment).
+    backfill_prices()
 
     # Remember everything we saw (even un-pushed overflow) to avoid re-alerting.
     seen.update(unique.keys())
