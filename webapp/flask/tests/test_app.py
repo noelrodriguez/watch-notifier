@@ -101,10 +101,19 @@ def test_create_watch_missing_field(client, tmp_path):
 
 def test_create_watch_no_valid_ref(client, tmp_path):
     (tmp_path / "watches.json").write_text("[]")
-    bad = {**VALID_WATCH, "refs": [{"ref": "X", "dial": "", "strap": "bracelet"}]}
+    bad = {**VALID_WATCH, "refs": [{"ref": "", "dial": "black", "strap": "bracelet"}]}
     with patch("app.DATA_DIR", tmp_path):
         r = client.post("/api/watches", json=bad)
     assert r.status_code == 400
+
+
+def test_create_watch_ref_without_dial_strap(client, tmp_path):
+    (tmp_path / "watches.json").write_text("[]")
+    ok = {**VALID_WATCH, "refs": [{"ref": "126610LN"}]}
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.post("/api/watches", json=ok)
+    assert r.status_code == 201
+    assert json.loads(r.data)["refs"] == [{"ref": "126610LN"}]
 
 
 def test_create_watch_duplicate_id(client, tmp_path):

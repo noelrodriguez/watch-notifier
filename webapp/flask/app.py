@@ -77,8 +77,8 @@ def _validate(payload):
     if payload.get("size_mm") is None:
         return None, "size_mm is required"
     refs = payload.get("refs") or []
-    if not any(r.get("dial") and r.get("strap") and r.get("ref") for r in refs):
-        return None, "at least one ref with dial and strap is required"
+    if not any(r.get("ref") for r in refs):
+        return None, "at least one ref is required"
     brand, model = payload["brand"], payload["model"]
     rel = payload.get("relevance_required_all")
     if not rel:
