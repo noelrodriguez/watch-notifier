@@ -127,6 +127,51 @@ def test_save_deals_appends_to_existing(tmp_path):
     assert saved[1]["id"] == "test:1"
 
 
+def _run_backfill(tmp_path, deals, fetch_return):
+    deals_file = tmp_path / "deals.json"
+    deals_file.write_text(json.dumps(deals))
+    with patch("watch_monitor.DEALS_FILE", deals_file), \
+         patch("watch_monitor.fetch_op_price", return_value=fetch_return), \
+         patch("watch_monitor.time.sleep"):
+        watch_monitor.backfill_prices()
+    return json.loads(deals_file.read_text())
+
+
+def test_backfill_recovers_price(tmp_path):
+    deals = [{"id": "reddit:a", "source": "r/watchexchange", "price": None, "url": "u"}]
+    saved = _run_backfill(tmp_path, deals, fetch_return=1750)
+    assert saved[0]["price"] == 1750
+    assert saved[0]["price_attempts"] == 1
+
+
+def test_backfill_increments_attempts_on_miss(tmp_path):
+    deals = [{"id": "reddit:a", "source": "r/watchexchange", "price": None,
+              "url": "u", "price_attempts": 2}]
+    saved = _run_backfill(tmp_path, deals, fetch_return=None)
+    assert saved[0]["price"] is None          # still blank, not given up yet
+    assert saved[0]["price_attempts"] == 3
+
+
+def test_backfill_flags_minus_one_after_five_attempts(tmp_path):
+    deals = [{"id": "reddit:a", "source": "r/watchexchange", "price": None,
+              "url": "u", "price_attempts": 4}]
+    saved = _run_backfill(tmp_path, deals, fetch_return=None)
+    assert saved[0]["price"] == -1            # 5th miss -> give-up sentinel
+    assert saved[0]["price_attempts"] == 5
+
+
+def test_backfill_skips_priced_and_nonreddit(tmp_path):
+    deals = [
+        {"id": "reddit:a", "source": "r/watchexchange", "price": 500, "url": "u"},
+        {"id": "ebay:b", "source": "eBay", "price": None, "url": "u"},
+    ]
+    saved = _run_backfill(tmp_path, deals, fetch_return=9999)
+    assert saved[0]["price"] == 500           # already priced -> untouched
+    assert "price_attempts" not in saved[0]
+    assert saved[1]["price"] is None          # non-reddit -> untouched
+    assert "price_attempts" not in saved[1]
+
+
 def test_slugify_brand_model():
     assert slugify("Longines", "Master Collection Chrono Moonphase") == \
         "longines-master-collection-chrono-moonphase"

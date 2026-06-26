@@ -221,6 +221,7 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
 .price-hot  { color: #5db85d; }
 .price-ok   { color: #c0b89a; }
 .price-none { color: #444; }
+.price-missing { color: #d08770; }  /* price never recovered after retries — investigate */
 
 .hot-badge { font-size: 14px; line-height: 1; }
 

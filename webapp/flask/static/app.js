@@ -227,8 +227,10 @@ function render() {
   tbody.innerHTML = sorted
     .map((d) => {
       const rowCls   = d.is_hot ? ' class="hot"' : '';
-      const price    = d.price != null ? `$${d.price.toLocaleString()}` : '—';
-      const priceCls = d.is_hot ? 'price-hot' : d.price != null ? 'price-ok' : 'price-none';
+      const gaveUp   = d.price === -1;  // monitor flag: price never recovered after retries
+      const price    = gaveUp ? '⚠ no price' : d.price != null ? `$${d.price.toLocaleString()}` : '—';
+      const priceCls = gaveUp ? 'price-missing'
+        : d.is_hot ? 'price-hot' : d.price != null ? 'price-ok' : 'price-none';
       const ref      = d.ref_matches && d.ref_matches.length ? d.ref_matches[0] : '—';
       const dialStr  = d.dial
         ? `${capitalize(d.dial)} · ${capitalize(d.strap || '')}`
