@@ -558,5 +558,39 @@
     "is_hot": false,
     "preferred_signals": [],
     "price_attempts": 5
+  },
+  {
+    "id": "reddit:1uieiyo",
+    "title": "[WTS] Longines Master Collection, Triple Date Moonphase 40mm Box and Card - $1,790",
+    "price": 1790,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uieiyo/wts_longines_master_collection_triple_date/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-29T04:13:02.699709+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": [
+      "40mm"
+    ]
+  },
+  {
+    "id": "reddit:1uihhvu",
+    "title": "[WTS] Tag Heuer Carrera 'Skipper' Chronograph CBS2213.FN6002 $4,750",
+    "price": 4750,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uihhvu/wts_tag_heuer_carrera_skipper_chronograph/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-29T04:13:02.699740+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
   }
 ]
