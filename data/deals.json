@@ -608,6 +608,23 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
+    "price_attempts": 2
+  },
+  {
+    "id": "reddit:1uj1y4s",
+    "title": "[WTS] Tag Heuer Carrera Chronograph CBN2A1A.FC6537",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uj1y4s/wts_tag_heuer_carrera_chronograph_cbn2a1afc6537/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-29T20:03:03.156895+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": [],
     "price_attempts": 1
   }
 ]
