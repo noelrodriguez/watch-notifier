@@ -276,6 +276,37 @@ def test_search_reddit_parses_rss_feed():
     assert out[0]["source"] == "r/watchexchange"
 
 
+_OP_HTML = """<div class="commentarea"><div class="comment">
+  <a class="author submitter">seller</a>
+  <div class="entry"><div class="usertext-body">Price: $2,499 shipped</div></div>
+</div></div>"""
+
+
+def test_fetch_op_price_retries_once_on_429():
+    """A transient 429 is waited out and retried once, so the price still recovers."""
+    from unittest.mock import MagicMock
+    limited = MagicMock(status_code=429, headers={"x-ratelimit-reset": "2"})
+    ok = MagicMock(status_code=200, ok=True, text=_OP_HTML)
+    with patch("watch_monitor.requests.get", side_effect=[limited, ok]) as get, \
+         patch("watch_monitor.time.sleep") as sleep:
+        price = watch_monitor.fetch_op_price("https://www.reddit.com/r/Watchexchange/comments/x/")
+    assert price == 2499
+    assert get.call_count == 2        # retried once after the 429
+    assert sleep.called               # waited out the reset
+
+
+def test_fetch_op_price_does_not_retry_on_403():
+    """A 403 is a hard IP block, not transient — return None without a wasted retry."""
+    from unittest.mock import MagicMock
+    blocked = MagicMock(status_code=403, ok=False, headers={})
+    with patch("watch_monitor.requests.get", return_value=blocked) as get, \
+         patch("watch_monitor.time.sleep"), \
+         patch("watch_monitor.describe_response", return_value="HTTP 403"):
+        price = watch_monitor.fetch_op_price("https://www.reddit.com/r/Watchexchange/comments/x/")
+    assert price is None
+    assert get.call_count == 1        # no retry on a hard block
+
+
 def test_default_source_toggles():
     # Per request: Reddit on (works via RSS), eBay & Chrono24 off by default.
     assert watch_monitor.ENABLE_REDDIT is True
