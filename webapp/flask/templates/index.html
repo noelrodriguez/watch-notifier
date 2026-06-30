@@ -99,7 +99,22 @@
 
     <div class="toolbar">
       <div class="result-count" id="result-count">Loading…</div>
-      <div class="sort-hint">Click a column to sort</div>
+      <div class="toolbar-right">
+        <div class="col-toggle-wrap">
+          <button class="col-toggle-btn" id="col-toggle-btn" aria-expanded="false">Columns ▾</button>
+          <div class="col-popover" id="col-popover" style="display:none">
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="price"><input type="checkbox" checked></span><span class="checkbox-text">Price</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="title"><input type="checkbox" checked></span><span class="checkbox-text">Title</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="brand"><input type="checkbox" checked></span><span class="checkbox-text">Brand</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="model"><input type="checkbox" checked></span><span class="checkbox-text">Model</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="ref"><input type="checkbox" checked></span><span class="checkbox-text">Ref</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="dial"><input type="checkbox" checked></span><span class="checkbox-text">Dial / Strap</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="source"><input type="checkbox" checked></span><span class="checkbox-text">Source</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="date_seen"><input type="checkbox" checked></span><span class="checkbox-text">Seen</span></label>
+          </div>
+        </div>
+        <div class="sort-hint">Click a column to sort</div>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -107,14 +122,14 @@
         <thead>
           <tr>
             <th></th>
-            <th class="sortable" data-sort="price">Price</th>
-            <th class="sortable" data-sort="title">Title</th>
-            <th class="sortable" data-sort="brand">Brand</th>
-            <th class="sortable" data-sort="model">Model</th>
-            <th class="sortable" data-sort="ref">Ref</th>
-            <th class="sortable" data-sort="dial">Dial / Strap</th>
-            <th class="sortable" data-sort="source">Source</th>
-            <th class="sortable" data-sort="date_seen">Seen</th>
+            <th class="sortable col-price" data-sort="price">Price</th>
+            <th class="sortable col-title" data-sort="title">Title</th>
+            <th class="sortable col-brand" data-sort="brand">Brand</th>
+            <th class="sortable col-model" data-sort="model">Model</th>
+            <th class="sortable col-ref" data-sort="ref">Ref</th>
+            <th class="sortable col-dial" data-sort="dial">Dial / Strap</th>
+            <th class="sortable col-source" data-sort="source">Source</th>
+            <th class="sortable col-date_seen" data-sort="date_seen">Seen</th>
           </tr>
         </thead>
         <tbody id="deals-tbody"></tbody>

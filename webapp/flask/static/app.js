@@ -5,6 +5,38 @@ let allDeals = [];
 /* Active column sort. Default = newest first (date_seen, descending). */
 let sortState = { column: 'date_seen', dir: 'desc' };
 
+/* ── Column visibility ── */
+const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', 'date_seen'];
+const LS_COL_KEY = 'deals-hidden-cols';
+
+function loadHiddenCols() {
+  try {
+    const raw = (typeof localStorage !== 'undefined') && localStorage.getItem(LS_COL_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((k) => COL_KEYS.includes(k)));
+  } catch { return new Set(); }
+}
+
+function saveHiddenCols(hidden) {
+  try {
+    (typeof localStorage !== 'undefined') &&
+      localStorage.setItem(LS_COL_KEY, JSON.stringify([...hidden]));
+  } catch { /* storage unavailable */ }
+}
+
+let hiddenCols = loadHiddenCols();
+
+function applyColVisibility() {
+  hiddenCols.forEach((key) => {
+    document.querySelectorAll(`.col-${key}`).forEach((el) => { el.style.display = 'none'; });
+  });
+  COL_KEYS.filter((k) => !hiddenCols.has(k)).forEach((key) => {
+    document.querySelectorAll(`.col-${key}`).forEach((el) => { el.style.display = ''; });
+  });
+}
+
 /* ── Data fetch ── */
 async function fetchData() {
   try {
@@ -239,17 +271,19 @@ function render() {
       const safeTitle = escapeHtml(d.title || '');
       return `<tr${rowCls} data-url="${safeUrl}">
         <td>${d.is_hot ? '<span class="hot-badge">🔥</span>' : ''}</td>
-        <td class="price-cell ${priceCls}">${price}</td>
-        <td class="title-cell" title="${safeTitle}">${escapeHtml(d.title || '—')}</td>
-        <td class="brand-cell">${escapeHtml(d.brand || '—')}</td>
-        <td class="model-cell">${escapeHtml(d.model || '—')}</td>
-        <td class="ref-cell">${escapeHtml(ref)}</td>
-        <td class="dial-cell">${escapeHtml(dialStr)}</td>
-        <td>${sourceBadge(d.source)}</td>
-        <td class="age-cell">${relativeTime(d.date_seen)}</td>
+        <td class="price-cell ${priceCls} col-price">${price}</td>
+        <td class="title-cell col-title" title="${safeTitle}">${escapeHtml(d.title || '—')}</td>
+        <td class="brand-cell col-brand">${escapeHtml(d.brand || '—')}</td>
+        <td class="model-cell col-model">${escapeHtml(d.model || '—')}</td>
+        <td class="ref-cell col-ref">${escapeHtml(ref)}</td>
+        <td class="dial-cell col-dial">${escapeHtml(dialStr)}</td>
+        <td class="col-source">${sourceBadge(d.source)}</td>
+        <td class="age-cell col-date_seen">${relativeTime(d.date_seen)}</td>
       </tr>`;
     })
     .join('');
+
+  applyColVisibility();
 }
 
 /* ── Helpers ── */
@@ -332,10 +366,58 @@ function setupListeners() {
   });
 }
 
+/* ── Column toggle popover ── */
+function setupColToggle() {
+  const btn = document.getElementById('col-toggle-btn');
+  const popover = document.getElementById('col-popover');
+
+  // Sync checkbox state from loaded hiddenCols
+  popover.querySelectorAll('[data-col]').forEach((box) => {
+    const key = box.dataset.col;
+    const cb  = box.querySelector('input');
+    const vis = !hiddenCols.has(key);
+    cb.checked = vis;
+    box.classList.toggle('checked', vis);
+  });
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = popover.style.display !== 'none';
+    popover.style.display = open ? 'none' : 'block';
+    btn.setAttribute('aria-expanded', String(!open));
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!popover.contains(e.target) && e.target !== btn) {
+      popover.style.display = 'none';
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  popover.querySelectorAll('.checkbox-row').forEach((row) => {
+    row.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const cb = row.querySelector('input');
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change'));
+    });
+    row.querySelector('input').addEventListener('change', (e) => {
+      const box = row.querySelector('[data-col]');
+      const key = box.dataset.col;
+      box.classList.toggle('checked', e.target.checked);
+      if (e.target.checked) hiddenCols.delete(key);
+      else hiddenCols.add(key);
+      saveHiddenCols(hiddenCols);
+      applyColVisibility();
+    });
+  });
+}
+
 /* ── Boot ── */
 document.addEventListener('DOMContentLoaded', () => {
   setupListeners();
   setupSortHeaders();
+  setupColToggle();
   setupWatchesListeners();
   fetchData();
 });
