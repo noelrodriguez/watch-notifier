@@ -307,6 +307,78 @@ def test_fetch_op_price_does_not_retry_on_403():
     assert get.call_count == 1        # no retry on a hard block
 
 
+_OP_HTML_MARKDOWN_PRICE = """<div class="commentarea"><div class="comment">
+  <a class="author submitter">seller</a>
+  <div class="entry"><div class="usertext-body">L2.773.4.78.3 Box and Papers **2700** fully insured shipping incl</div></div>
+</div></div>"""
+
+
+def _fake_anthropic(reply_text):
+    """Build a stand-in `anthropic` module whose messages.create returns reply_text."""
+    from unittest.mock import MagicMock
+    block = MagicMock(type="text", text=reply_text)
+    resp = MagicMock(content=[block])
+    module = MagicMock()
+    module.Anthropic.return_value.messages.create.return_value = resp
+    return module
+
+
+def test_parse_price_misses_markdown_wrapped_price():
+    """Documents the regex gap the LLM fallback exists for: **2700** + 'shipping'."""
+    text = "L2.773.4.78.3 Box and Papers **2700** fully insured shipping incl"
+    assert watch_monitor.parse_price(text, loose=True) is None
+
+
+def test_extract_price_llm_no_key_returns_none(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert watch_monitor.extract_price_llm("asking **2700** shipped") is None
+
+
+def test_extract_price_llm_skips_textless(monkeypatch):
+    """No digit in the comment → no API call, returns None."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    import sys
+    called = _fake_anthropic("2700")
+    monkeypatch.setitem(sys.modules, "anthropic", called)
+    assert watch_monitor.extract_price_llm("Messaging") is None
+    assert not called.Anthropic.called           # never reached the SDK
+
+
+def test_extract_price_llm_parses_and_validates(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    import sys
+    monkeypatch.setitem(sys.modules, "anthropic", _fake_anthropic("2700"))
+    assert watch_monitor.extract_price_llm("**2700** shipped") == 2700
+    # Implausible number rejected by _to_price (must be 100..100000)
+    monkeypatch.setitem(sys.modules, "anthropic", _fake_anthropic("5"))
+    assert watch_monitor.extract_price_llm("watch for 5 bucks lol") is None
+
+
+def test_fetch_op_price_falls_back_to_llm(monkeypatch):
+    """When the regex finds no price, the best OP comment goes to the LLM."""
+    from unittest.mock import MagicMock
+    ok = MagicMock(status_code=200, ok=True, text=_OP_HTML_MARKDOWN_PRICE)
+    with patch("watch_monitor.requests.get", return_value=ok), \
+         patch("watch_monitor.time.sleep"), \
+         patch("watch_monitor.extract_price_llm", return_value=2700) as llm:
+        price = watch_monitor.fetch_op_price(
+            "https://www.reddit.com/r/Watchexchange/comments/x/", title="Longines")
+    assert price == 2700
+    assert llm.called
+    assert "2700" in llm.call_args.args[0]       # passed the OP comment text
+
+
+def test_fetch_op_price_skips_llm_when_regex_hits(monkeypatch):
+    """The cheap regex path wins; the LLM is never called when a price is found."""
+    from unittest.mock import MagicMock
+    ok = MagicMock(status_code=200, ok=True, text=_OP_HTML)
+    with patch("watch_monitor.requests.get", return_value=ok), \
+         patch("watch_monitor.extract_price_llm") as llm:
+        price = watch_monitor.fetch_op_price("https://www.reddit.com/r/Watchexchange/comments/x/")
+    assert price == 2499
+    assert not llm.called
+
+
 def test_default_source_toggles():
     # Per request: Reddit on (works via RSS), eBay & Chrono24 off by default.
     assert watch_monitor.ENABLE_REDDIT is True
@@ -495,8 +567,8 @@ def test_enrich_reddit_prices_fills_only_priceless_reddit_items():
     # item_c is not a reddit source — must remain None
     assert items[2]["price"] is None
 
-    # fetch_op_price called exactly once, with item_a's url
-    mock_fetch.assert_called_once_with(item_a["url"])
+    # fetch_op_price called exactly once, with item_a's url + title
+    mock_fetch.assert_called_once_with(item_a["url"], item_a["title"])
     # politeness sleep called once for the one fetch
     mock_sleep.assert_called_once_with(1)
 

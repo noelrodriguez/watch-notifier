@@ -502,7 +502,50 @@ def run_test_push():
     sys.exit(0 if ok else 1)
 
 
-def fetch_op_price(post_url):
+# LLM fallback model for prices the regex can't read (markdown-wrapped numbers,
+# unusual phrasing, multi-watch posts). Sonnet 4.6 balances cost and accuracy for
+# this simple extraction; override with PRICE_LLM_MODEL (e.g. claude-haiku-4-5 to
+# save more, claude-opus-4-8 for the strongest model).
+PRICE_LLM_MODEL = os.getenv("PRICE_LLM_MODEL", "claude-sonnet-4-6")
+
+
+def extract_price_llm(comment_text, title=None):
+    """Last-resort price extraction via Claude when parse_price() can't read a comment.
+
+    Only fires when ANTHROPIC_API_KEY is set and the text actually contains a digit
+    (so "Messaging"-type comments cost nothing). Best-effort: a missing key, missing
+    SDK, or any API error returns None — same contract as the regex path. The model's
+    answer is validated back through _to_price, so a hallucinated/implausible number
+    is rejected rather than trusted.
+    """
+    if not os.getenv("ANTHROPIC_API_KEY") or not comment_text or not re.search(r"\d", comment_text):
+        return None
+    try:
+        import anthropic
+    except ImportError:
+        return None
+    ctx = f"Listing title: {title}\n\n" if title else ""
+    prompt = (
+        f"{ctx}A seller posted the comment below on r/watchexchange. Extract the "
+        f"seller's asking price in USD for the watch being sold. Reply with ONLY the "
+        f"whole-dollar integer (no $, no commas), or the word NONE if no price is "
+        f"stated.\n\nComment:\n{comment_text}"
+    )
+    try:
+        resp = anthropic.Anthropic().messages.create(
+            model=PRICE_LLM_MODEL,
+            max_tokens=16,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        out = "".join(b.text for b in resp.content if b.type == "text").strip()
+    except Exception as e:
+        log(f"WARN: LLM price extraction failed: {e}")
+        return None
+    m = re.search(r"\d[\d,]*", out)
+    return _to_price(m.group(0)) if m else None
+
+
+def fetch_op_price(post_url, title=None):
     """Best-effort: return the asking price from the OP's comment on a thread, or None.
 
     On r/watchexchange the price is usually in the seller's (OP's) own comment, which
@@ -510,6 +553,10 @@ def fetch_op_price(post_url):
     and tags OP comments with the 'submitter' class, so we fetch the thread there and
     parse the price from the OP's comment. Any failure returns None — the listing still
     links through, so a miss just leaves the price blank (not a hard error).
+
+    The cheap regex (parse_price) is tried first on every OP comment; only if it finds
+    nothing do we fall back to extract_price_llm on the most likely OP comment, for
+    prices the regex can't read (e.g. markdown-wrapped "**2700**", odd phrasing).
     """
     if not post_url:
         return None
@@ -531,12 +578,20 @@ def fetch_op_price(post_url):
             log(f"WARN: OP-price fetch failed for {post_url}: {describe_response(r)}")
             return None
         soup = BeautifulSoup(r.text, "html.parser")
+        best = ""  # longest digit-bearing OP comment, kept for the LLM fallback
         for c in soup.select(".commentarea div.comment"):
             if c.select_one("a.author.submitter"):           # comment authored by the OP
                 body = c.select_one(".entry .usertext-body")
-                price = parse_price(body.get_text(" ", strip=True), loose=True) if body else None
+                if not body:
+                    continue
+                text = body.get_text(" ", strip=True)
+                price = parse_price(text, loose=True)
                 if price is not None:
                     return price
+                if re.search(r"\d", text) and len(text) > len(best):
+                    best = text
+        if best:                                             # regex struck out — ask Claude
+            return extract_price_llm(best, title)
     except Exception as e:
         log(f"WARN: OP-price fetch error for {post_url}: {e}")
     return None
@@ -551,7 +606,7 @@ def enrich_reddit_prices(items):
     """
     for it in items:
         if it.get("price") is None and it.get("source") == "r/watchexchange":
-            it["price"] = fetch_op_price(it["url"])
+            it["price"] = fetch_op_price(it["url"], it.get("title"))
             time.sleep(1)
 
 
@@ -582,7 +637,7 @@ def backfill_prices():
             continue
         attempts = d.get("price_attempts", 0) + 1
         d["price_attempts"] = attempts
-        price = fetch_op_price(d.get("url"))
+        price = fetch_op_price(d.get("url"), d.get("title"))
         if price is not None:
             d["price"] = price
             log(f"  backfilled price ${price} for {d['id']} (attempt {attempts})")
