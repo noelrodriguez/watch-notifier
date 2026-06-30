@@ -608,7 +608,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 3
+    "price_attempts": 4
   },
   {
     "id": "reddit:1uj1y4s",
@@ -625,6 +625,23 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 2
+    "price_attempts": 3
+  },
+  {
+    "id": "reddit:1uj7ybk",
+    "title": "[WTS] Tudor Black Bay Burgundy \"Smiley\" Ref. 79220R \u2013 Last Production (2017 card)",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uj7ybk/wts_tudor_black_bay_burgundy_smiley_ref_79220r/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-06-30T00:08:02.681575+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": [],
+    "price_attempts": 1
   }
 ]
