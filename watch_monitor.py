@@ -516,6 +516,17 @@ def fetch_op_price(post_url):
     old_url = re.sub(r"^https?://(www\.)?reddit\.com", "https://old.reddit.com", post_url)
     try:
         r = requests.get(old_url, headers={"User-Agent": BROWSER_UA}, timeout=HTTP_TIMEOUT)
+        if r.status_code == 429:
+            # Transient rate-limit (a price-less batch fires several of these back to
+            # back): wait out the reset and retry once, mirroring _get_reddit_rss. A
+            # 403 is a hard IP block (datacenter), so it is NOT retried — only 429.
+            try:
+                wait = min(int(r.headers.get("x-ratelimit-reset", "5")) + 1, 65)
+            except ValueError:
+                wait = 5
+            log(f"INFO: OP-price rate-limited for {post_url}; waiting {wait}s then retrying.")
+            time.sleep(wait)
+            r = requests.get(old_url, headers={"User-Agent": BROWSER_UA}, timeout=HTTP_TIMEOUT)
         if not r.ok:
             log(f"WARN: OP-price fetch failed for {post_url}: {describe_response(r)}")
             return None
