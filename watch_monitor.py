@@ -503,9 +503,10 @@ def run_test_push():
 
 
 # LLM fallback model for prices the regex can't read (markdown-wrapped numbers,
-# unusual phrasing, multi-watch posts). Defaults to the strongest model; override
-# with PRICE_LLM_MODEL=claude-haiku-4-5 for a cheaper run (ample for this task).
-PRICE_LLM_MODEL = os.getenv("PRICE_LLM_MODEL", "claude-opus-4-8")
+# unusual phrasing, multi-watch posts). Sonnet 4.6 balances cost and accuracy for
+# this simple extraction; override with PRICE_LLM_MODEL (e.g. claude-haiku-4-5 to
+# save more, claude-opus-4-8 for the strongest model).
+PRICE_LLM_MODEL = os.getenv("PRICE_LLM_MODEL", "claude-sonnet-4-6")
 
 
 def extract_price_llm(comment_text, title=None):
