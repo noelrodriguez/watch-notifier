@@ -231,3 +231,54 @@ def test_push_timeout(client):
         r = client.post("/api/push")
     assert r.status_code == 500
     assert "timed out" in json.loads(r.data)["error"]
+
+
+# ── Delete deal ──
+
+def test_delete_deal(client, tmp_path):
+    deals = [{"id": "reddit:1uex7dl", "title": "Rolex"}, {"id": "chrono24:test3", "title": "Omega"}]
+    (tmp_path / "deals.json").write_text(json.dumps(deals))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.delete("/api/deals/reddit%3A1uex7dl")
+    assert r.status_code == 200
+    assert json.loads(r.data) == {"ok": True}
+    saved = json.loads((tmp_path / "deals.json").read_text())
+    assert len(saved) == 1
+    assert saved[0]["id"] == "chrono24:test3"
+
+
+def test_delete_deal_not_found(client, tmp_path):
+    deals = [{"id": "reddit:1uex7dl", "title": "Rolex"}]
+    (tmp_path / "deals.json").write_text(json.dumps(deals))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.delete("/api/deals/nonexistent")
+    assert r.status_code == 404
+    assert "not found" in json.loads(r.data)["error"]
+
+
+def test_status_dirty_deals(client):
+    def fake_run(cmd, **kw):
+        if "status" in cmd:
+            return MagicMock(returncode=0, stdout=" M data/deals.json\n", stderr="")
+        return MagicMock(returncode=0, stdout="0\n", stderr="")
+    with patch("app.subprocess.run", side_effect=fake_run):
+        r = client.get("/api/status")
+    body = json.loads(r.data)
+    assert body["dirty"] is True
+    assert body["needs_push"] is True
+
+
+def test_push_stages_deals(client):
+    """push stages both watches.json and deals.json."""
+    staged_files = []
+
+    def fake_run(cmd, **kw):
+        if "add" in cmd:
+            staged_files.extend(cmd[cmd.index("add") + 1:])
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with patch("app.subprocess.run", side_effect=fake_run):
+        r = client.post("/api/push")
+    assert r.status_code == 200
+    assert "data/deals.json" in staged_files
+    assert "data/watches.json" in staged_files
