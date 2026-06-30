@@ -20,44 +20,6 @@
     "is_hot": true
   },
   {
-    "id": "ebay:test2",
-    "title": "Longines Master Chronograph Moonphase 40mm ivory L2.673.4.71.2",
-    "price": 2200,
-    "url": "https://ebay.com/itm/test2",
-    "source": "eBay",
-    "date_seen": "2026-06-18T15:30:00Z",
-    "brand": "Longines",
-    "model": "Master Collection Chrono Moonphase",
-    "size_mm": 40,
-    "ref_matches": [
-      "L2.673.4.71.2"
-    ],
-    "dial": "ivory",
-    "strap": "leather",
-    "preferred_signals": [
-      "40mm"
-    ],
-    "is_hot": false
-  },
-  {
-    "id": "chrono24:test3",
-    "title": "Longines Master Moonphase anthracite L2.673.4.61.6 full set",
-    "price": null,
-    "url": "https://chrono24.com/test3",
-    "source": "Chrono24",
-    "date_seen": "2026-06-17T08:00:00Z",
-    "brand": "Longines",
-    "model": "Master Collection Chrono Moonphase",
-    "size_mm": 40,
-    "ref_matches": [
-      "L2.673.4.61.6"
-    ],
-    "dial": "anthracite",
-    "strap": "bracelet",
-    "preferred_signals": [],
-    "is_hot": false
-  },
-  {
     "id": "reddit:1tzv0do",
     "title": "[WTS] Longines Master Collection, Triple Date Moonphase 40mm Box and Card - $1,590",
     "price": 1590,
