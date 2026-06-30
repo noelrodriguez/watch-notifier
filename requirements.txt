@@ -1,6 +1,8 @@
 # ── Monitor deps ──────────────────────────────────────────────────────────────
 requests>=2.31
 beautifulsoup4>=4.12
+# Optional: semantic price extraction fallback (only used when ANTHROPIC_API_KEY is set).
+anthropic>=0.40
 
 # ── Flask web app (webapp/flask/) ─────────────────────────────────────────────
 # Remove this section if dropping Flask: rm -rf webapp/flask
