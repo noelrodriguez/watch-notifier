@@ -269,6 +269,7 @@ function render() {
         : '—';
       const safeUrl  = escapeHtml(d.url || '');
       const safeTitle = escapeHtml(d.title || '');
+      const safeId = escapeHtml(encodeURIComponent(d.id || ''));
       return `<tr${rowCls} data-url="${safeUrl}">
         <td>${d.is_hot ? '<span class="hot-badge">🔥</span>' : ''}</td>
         <td class="price-cell ${priceCls} col-price">${price}</td>
@@ -279,6 +280,7 @@ function render() {
         <td class="dial-cell col-dial">${escapeHtml(dialStr)}</td>
         <td class="col-source">${sourceBadge(d.source)}</td>
         <td class="age-cell col-date_seen">${relativeTime(d.date_seen)}</td>
+        <td><button class="deal-del-btn" data-id="${safeId}" title="Delete deal">✕</button></td>
       </tr>`;
     })
     .join('');
@@ -341,6 +343,8 @@ function setupListeners() {
   });
 
   document.getElementById('deals-tbody').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.deal-del-btn');
+    if (delBtn) { deleteDeal(delBtn.dataset.id); return; }
     const row = e.target.closest('tr[data-url]');
     if (!row) return;
     const url = row.dataset.url;
@@ -541,6 +545,19 @@ async function deleteWatch(id) {
     return;
   }
   fetchWatches();
+}
+
+async function deleteDeal(encodedId) {
+  if (!confirm('Delete this deal?')) return;
+  const res = await fetch(`/api/deals/${encodedId}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert('Delete failed: ' + (err.error || res.status));
+    return;
+  }
+  allDeals = allDeals.filter((d) => encodeURIComponent(d.id || '') !== encodedId);
+  render();
+  refreshStatus();
 }
 
 /* ── Push banner ── */

@@ -136,6 +136,40 @@ def delete_watch(watch_id):
     return jsonify({"ok": True}), 200
 
 
+def _load_deals():
+    p = DATA_DIR / "deals.json"
+    if not p.exists():
+        return []
+    try:
+        data = json.loads(p.read_text())
+    except Exception:
+        return []
+    return data if isinstance(data, list) else []
+
+
+def _save_deals(deals):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(deals, f, indent=2)
+        os.replace(tmp, DATA_DIR / "deals.json")
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+
+
+@app.route("/api/deals/<deal_id>", methods=["DELETE"])
+def delete_deal(deal_id):
+    deals = _load_deals()
+    remaining = [d for d in deals if d.get("id") != deal_id]
+    if len(remaining) == len(deals):
+        return jsonify({"error": "not found"}), 404
+    _save_deals(remaining)
+    return jsonify({"ok": True}), 200
+
+
 def _git(*args):
     # Local-only convenience routes: this Flask app is meant to run on the user's
     # machine, so invoking git (including push) from a route is a deliberate design
@@ -147,7 +181,7 @@ def _git(*args):
 @app.route("/api/status")
 def status():
     try:
-        st = _git("status", "--porcelain", "data/watches.json")
+        st = _git("status", "--porcelain", "data/watches.json", "data/deals.json")
         dirty = bool(st.stdout.strip())
         ahead_res = _git("rev-list", "--count", "@{u}..HEAD")
         ahead = int(ahead_res.stdout.strip()) if ahead_res.returncode == 0 else 0
@@ -161,12 +195,12 @@ def status():
 @app.route("/api/push", methods=["POST"])
 def push():
     try:
-        add = _git("add", "data/watches.json")
+        add = _git("add", "data/watches.json", "data/deals.json")
         if add.returncode != 0:
             return jsonify({"ok": False, "error": add.stderr.strip()}), 500
-        diff = _git("diff", "--cached", "--quiet", "data/watches.json")
+        diff = _git("diff", "--cached", "--quiet", "data/watches.json", "data/deals.json")
         if diff.returncode == 1:  # 1 => staged changes present
-            commit = _git("commit", "-m", "chore: update watch registry")
+            commit = _git("commit", "-m", "chore: update watch registry and deals")
             if commit.returncode != 0:
                 return jsonify({"ok": False, "error": commit.stderr.strip()}), 500
         push_res = _git("push")

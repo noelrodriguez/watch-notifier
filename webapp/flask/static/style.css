@@ -338,3 +338,7 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
   min-width: 130px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
+
+.deal-del-btn { background: transparent; color: #666; border: none;
+  padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
+.deal-del-btn:hover { color: #e05; }
