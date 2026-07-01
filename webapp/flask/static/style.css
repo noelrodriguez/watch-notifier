@@ -268,14 +268,20 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
 #watches-view { padding: 20px 28px; }
 .watches-header { display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 16px; }
+/* Section title: tracked-uppercase, per the No-Display Rule — no browser-default h2. */
+.watches-header h2 { margin: 0; color: #c9a84c; font-size: 12px; font-weight: 500;
+  letter-spacing: 2.5px; text-transform: uppercase; }
 #add-watch-btn { background: #c9a84c; color: #07070d; border: none;
   padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 .watch-row { display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 12px; border-bottom: 1px solid #161620; }
+  padding: 11px 12px; border-bottom: 1px solid #1e1e2e; }
 .watch-name { color: #c9a84c; }
 .watch-sub { color: #777; font-size: 0.85em; margin-left: 8px; }
-.watch-actions button { background: transparent; color: #aaa; border: 1px solid #333;
-  margin-left: 6px; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+.watch-actions button { background: transparent; color: #888; border: 1px solid #252535;
+  margin-left: 6px; padding: 4px 10px; border-radius: 4px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s; }
+.watch-actions button:hover { border-color: #c9a84c44; color: #c9a84c; }
+.watch-actions button[data-del]:hover { border-color: #aa333366; color: #cc5f57; }
 .push-banner { display: flex; justify-content: space-between; align-items: center;
   background: #2a2410; border: 1px solid #c9a84c; color: #e7d6a0;
   padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; }
@@ -285,18 +291,25 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
   align-items: center; justify-content: center; z-index: 50; }
 .modal-card { background: #0d0d16; border: 1px solid #222; padding: 22px;
   border-radius: 8px; width: 460px; max-height: 86vh; overflow-y: auto; }
-.modal-card h3 { color: #c9a84c; margin-top: 0; }
-.modal-card label { display: block; margin: 8px 0; color: #aaa; }
-.modal-card input, .modal-card textarea { width: 100%; background: #07070d;
-  border: 1px solid #333; color: #e7e7ea; padding: 6px; border-radius: 4px;
-  box-sizing: border-box; }
+.modal-card h3 { color: #c9a84c; margin: 0 0 16px; font-size: 12px; font-weight: 500;
+  letter-spacing: 2px; text-transform: uppercase; }
+.modal-card label { display: block; margin: 12px 0 6px; color: #888; font-size: 9px;
+  font-weight: 500; letter-spacing: 2px; text-transform: uppercase; }
+.modal-card input, .modal-card textarea { width: 100%; background: #111120;
+  border: 1px solid #252535; color: #c0b89a; padding: 7px 10px; border-radius: 4px;
+  box-sizing: border-box; outline: none; text-transform: none; letter-spacing: normal;
+  transition: border-color 0.15s; }
+.modal-card input::placeholder, .modal-card textarea::placeholder { color: #333; }
+.modal-card input:focus, .modal-card textarea:focus { border-color: #c9a84c44; }
 .refs-section { margin: 12px 0; }
 .ref-row { display: flex; gap: 6px; margin-bottom: 6px; }
 #add-ref-btn { background: transparent; color: #c9a84c; border: 1px dashed #555;
   padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-#watch-cancel { background: transparent; color: #aaa; border: 1px solid #333;
-  padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+#watch-cancel { background: transparent; color: #888; border: 1px solid #252535;
+  padding: 8px 16px; border-radius: 4px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s; }
+#watch-cancel:hover { border-color: #c9a84c44; color: #c9a84c; }
 #watch-save { background: #c9a84c; color: #07070d; border: none; padding: 8px 16px;
   border-radius: 4px; cursor: pointer; font-weight: 600; }
 .form-error { background: #3a1414; border: 1px solid #a33; color: #f1b0b0;
@@ -341,4 +354,4 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
 
 .deal-del-btn { background: transparent; color: #666; border: none;
   padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
-.deal-del-btn:hover { color: #e05; }
+.deal-del-btn:hover { color: #cc5f57; }  /* shared destructive hue (see watch delete) */
