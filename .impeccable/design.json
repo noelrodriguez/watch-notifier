@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-30T00:00:00Z",
+  "title": "Design System: Watch Deals",
+  "extensions": {
+    "colorMeta": {
+      "warm-gold": { "role": "primary", "displayName": "Warm Gold", "canonical": "#c9a84c", "tonalRamp": ["#1f1a0e", "#332a17", "#4d3f21", "#6b5730", "#8f753f", "#b7954d", "#c9a84c", "#e0c060"] },
+      "signal-green": { "role": "secondary", "displayName": "Signal Green", "canonical": "#5db85d", "tonalRamp": ["#0e180e", "#16281a", "#1f3c22", "#2c552d", "#3d7440", "#4f9950", "#5db85d", "#7fd07f"] },
+      "signal-coral": { "role": "tertiary", "displayName": "Signal Coral", "canonical": "#d08770", "tonalRamp": ["#241310", "#3a1e18", "#552d24", "#7a4034", "#a3594a", "#c07360", "#d08770", "#e2a996"] },
+      "void-black": { "role": "neutral", "displayName": "Void Black", "canonical": "#07070d" },
+      "panel-black": { "role": "neutral", "displayName": "Panel Black", "canonical": "#09090f" },
+      "raised-black": { "role": "neutral", "displayName": "Raised Black", "canonical": "#0d0d16" },
+      "field-black": { "role": "neutral", "displayName": "Field Black", "canonical": "#111120" },
+      "ivory": { "role": "neutral", "displayName": "Ivory", "canonical": "#e0d9cc" },
+      "clay": { "role": "neutral", "displayName": "Clay", "canonical": "#c0b89a" },
+      "dust": { "role": "neutral", "displayName": "Dust", "canonical": "#9a9282" },
+      "fog": { "role": "neutral", "displayName": "Fog", "canonical": "#777777" },
+      "graphite": { "role": "neutral", "displayName": "Graphite", "canonical": "#444444" },
+      "source-reddit": { "role": "categorical", "displayName": "Source: Reddit", "canonical": "#9c7fc0" },
+      "source-ebay": { "role": "categorical", "displayName": "Source: eBay", "canonical": "#7c9fc0" },
+      "source-chrono": { "role": "categorical", "displayName": "Source: Chrono24", "canonical": "#c09a50" }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "The 'Watch Deals' wordmark in the header. Single use." },
+      "label": { "displayName": "Label", "purpose": "Filter labels and table column headers. The system's primary typographic voice." },
+      "body": { "displayName": "Body", "purpose": "Values, watch names, modal copy, table cells." },
+      "mono": { "displayName": "Mono", "purpose": "Reference numbers only, for columnar alignment and visual distinction from prose." }
+    },
+    "shadows": [
+      { "name": "popover-float", "value": "0 4px 16px rgba(0,0,0,0.5)", "purpose": "The only elevation shadow in the system; column-visibility popover only." },
+      { "name": "modal-scrim", "value": "rgba(0,0,0,0.7)", "purpose": "Backdrop dim behind the watch-edit modal (not a card shadow)." }
+    ],
+    "motion": [
+      { "name": "ease-fast", "value": "0.1s", "purpose": "Table row hover background shift." },
+      { "name": "ease-standard", "value": "0.15s-0.2s", "purpose": "Buttons, toggles, checkboxes, borders — default state-change speed." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid gold CTA for the single most important action per view (Add Watch, Save, Push to activate).",
+      "html": "<button class=\"ds-btn-primary\">Add Watch</button>",
+      "css": ".ds-btn-primary { background: #c9a84c; color: #07070d; border: none; padding: 8px 14px; border-radius: 4px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s; } .ds-btn-primary:hover { background: #e0c060; } .ds-btn-primary:focus-visible { outline: 2px solid #e0c060; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Default secondary action (Clear filters, Cancel, nav tabs). Transparent, hover shifts to gold.",
+      "html": "<button class=\"ds-btn-ghost\">Clear filters</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: #555; border: 1px solid #252535; padding: 8px; border-radius: 4px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: border-color 0.15s, color 0.15s; } .ds-btn-ghost:hover { border-color: #c9a84c44; color: #c9a84c; } .ds-btn-ghost:focus-visible { outline: 2px solid #c9a84c44; outline-offset: 2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Text/number input used in filters and the watch-edit modal. Recessed field tone, gold glow on focus.",
+      "html": "<input class=\"ds-input\" type=\"number\" placeholder=\"$min\">",
+      "css": ".ds-input { background: #111120; border: 1px solid #252535; color: #c0b89a; font-size: 12px; padding: 7px 10px; border-radius: 4px; outline: none; transition: border-color 0.15s; } .ds-input::placeholder { color: #333; } .ds-input:focus { border-color: #c9a84c44; }"
+    },
+    {
+      "name": "Source Badge",
+      "kind": "chip",
+      "refersTo": "badge-source",
+      "description": "Pill tag identifying a listing's source (Reddit/eBay/Chrono24), one tint per source.",
+      "html": "<span class=\"ds-badge ds-badge-reddit\">reddit</span>",
+      "css": ".ds-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; white-space: nowrap; display: inline-block; } .ds-badge-reddit { background: #1a1520; color: #9c7fc0; border: 1px solid #2a2035; }"
+    },
+    {
+      "name": "Custom Toggle",
+      "kind": "input",
+      "refersTo": "toggle",
+      "description": "34x20px pill switch (e.g. 'Under ceiling only'). Off is graphite, on shifts to a green-tinted dark with a green dot — the one place non-gold color communicates state.",
+      "html": "<button class=\"ds-toggle ds-toggle-active\" aria-pressed=\"true\"><span class=\"ds-toggle-dot\"></span></button>",
+      "css": ".ds-toggle { width: 34px; height: 20px; background: #1a1a28; border: 1px solid #2a2a3a; border-radius: 10px; position: relative; cursor: pointer; padding: 0; transition: background 0.2s, border-color 0.2s; } .ds-toggle-active { background: #1a2a1a; border-color: #2a4a2a; } .ds-toggle-dot { width: 14px; height: 14px; background: #333; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left 0.2s, background 0.2s; } .ds-toggle-active .ds-toggle-dot { left: 16px; background: #5db85d; }"
+    },
+    {
+      "name": "Modal Card",
+      "kind": "card",
+      "refersTo": "card-modal",
+      "description": "The watch-edit modal surface. Raised Black background, 8px radius, no shadow (relies on the backdrop scrim).",
+      "html": "<div class=\"ds-modal-card\"><h3 class=\"ds-modal-title\">Add Watch</h3></div>",
+      "css": ".ds-modal-card { background: #0d0d16; border: 1px solid #222; padding: 22px; border-radius: 8px; width: 460px; max-height: 86vh; overflow-y: auto; } .ds-modal-title { color: #c9a84c; margin-top: 0; font-size: 16px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Midnight Desk",
+    "overview": "A single desk lamp over a dark workspace, late at night, everything unnecessary switched off. The surface is near-black, layered in three or four almost-identical dark tones so structure reads from depth, not from borders. One warm gold accent — the lamplight — marks the things that matter: brand identity, the active nav item, a call to action, the price you should actually look at. A muted green stands in for \"this is a genuinely good find,\" used sparingly enough that it still means something when it appears. This is a solo-operator tool, not a showroom. It rejects literal watch-dealer catalog styling — no faux leather, no filigree, no ornamental flourish borrowed from the product category. The luxury reference is a tone carried by one color, not a costume worn by the whole interface. Density is a feature: the table is the product, and everything else exists to filter, sort, or annotate it.",
+    "keyCharacteristics": [
+      "Near-black, tonally-layered surfaces (no pure black, no gradients)",
+      "One deliberate accent (warm gold) plus one signal color (green, for hot deals)",
+      "Flat by default — depth comes from tone-shift, not shadow",
+      "Small, tightly-tracked uppercase labels throughout (9–12px, 2–4px letter-spacing)",
+      "Dense data table as the primary surface; everything else is filter chrome around it"
+    ],
+    "rules": [
+      { "name": "The One Lamp Rule", "body": "Warm gold is the only warm, saturated color allowed outside status signals. If a new element wants an accent color, it's gold, or it's not an accent.", "section": "colors" },
+      { "name": "The No-Display Rule", "body": "Nothing in this system exceeds 13px except the tracked-uppercase title. If a redesign wants a bigger typographic moment, it needs a deliberate decision, not a drift.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest; the only elevation is the one floating popover and the modal scrim. Don't add card shadows to the table, sidebar, or toolbar.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep warm gold (#c9a84c) as the only saturated accent color used for identity, emphasis, and primary actions — per The One Lamp Rule.",
+      "Do convey depth by stepping between the four near-black surface tones (Void → Panel → Raised → Field), not by adding shadows.",
+      "Do use Signal Green only for a genuinely-cleared price/hot-deal condition — it's a status signal, not a decoration.",
+      "Do keep labels small, uppercase, and letter-spaced (9–12px, 2–4px tracking) — that's where this system's personality lives.",
+      "Do keep the table as the visual center of gravity; filter chrome (sidebar, toolbar) should stay quieter than the data it controls."
+    ],
+    "donts": [
+      "Don't introduce a second saturated accent color competing with warm gold — if something needs to stand out, it's gold or a status color (green/coral/red), never a new hue.",
+      "Don't add card shadows to the sidebar, toolbar, or table rows — per The Flat-By-Default Rule, the one shadow in this system belongs to the floating column popover only.",
+      "Don't reach for literal watch-dealer/catalog styling (faux leather textures, filigree, ornamental serif display type, gold foil effects) — the luxury reference is one color, not a costume, per PRODUCT.md's anti-skeuomorphism principle.",
+      "Don't push any text past 13px without a deliberate decision — this system has no display/headline scale, per The No-Display Rule.",
+      "Don't use side-stripe borders as a general accent pattern — the one exception (.hot row's 2px left border) is a specific, load-bearing status signal, not a decorative device to reuse elsewhere."
+    ]
+  }
+}
