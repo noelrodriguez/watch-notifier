@@ -75,3 +75,12 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - After the PR exists, open it in a browser window for the user to review
   (e.g. `open <pr-url>` on macOS). If `gh` is unavailable, open the GitHub
   compare/create-PR page instead so the PR can be published with one click.
+
+## Design Context
+
+The `webapp/flask` dashboard has a documented design system — see `PRODUCT.md` (register:
+product; solo internal tool) and `DESIGN.md` (current visual system: dark tonal layers, one
+gold `#c9a84c` accent, "The Midnight Desk"). Target direction is a cleaner, more modern
+dark-minimal feel (Linear/Vercel/Raycast neighborhood) while keeping the gold accent — the
+current CSS hasn't fully closed that gap yet. Use `/impeccable polish` or `/impeccable live`
+for UI work on this app rather than freehand restyling.
