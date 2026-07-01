@@ -652,6 +652,22 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 1
+    "price_attempts": 2
+  },
+  {
+    "id": "reddit:1uku5kl",
+    "title": "[WTS] New Tudor Black Bay Pro Black 6/26 Stickered Ref. 79470 $3,699.00",
+    "price": 3699,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uku5kl/wts_new_tudor_black_bay_pro_black_626_stickered/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-01T20:09:01.922802+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
