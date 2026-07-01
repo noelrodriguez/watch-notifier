@@ -623,7 +623,7 @@
   {
     "id": "reddit:1uk22un",
     "title": "[WTS] TAG Heuer Carrera Heuer 02 Skeleton Chronograph CBG2A10.FT6168",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1uk22un/wts_tag_heuer_carrera_heuer_02_skeleton/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-30T22:18:06.361145+00:00",
@@ -635,6 +635,6 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 4
+    "price_attempts": 5
   }
 ]
