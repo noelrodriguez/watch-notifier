@@ -1,7 +1,7 @@
 # watch-notifier
 
 Hourly monitor for **Longines Master Collection Chrono Moonphase (40mm)** secondary-market
-listings. Scans **r/watchexchange + eBay (+ Chrono24 best-effort)** and pushes new finds to
+listings. Scans **r/watchexchange** and pushes new finds to
 your phone via **[ntfy](https://ntfy.sh)**. Runs free on **GitHub Actions** — no server, no PC required.
 
 ## How it works
@@ -49,5 +49,5 @@ is `MAX_PUSH_PER_RUN`.
 ## Caveats
 
 - GitHub cron is **UTC** and runs can lag **10–30 min** under load (fine for hourly).
-- **Datacenter IPs get bot-blocked more than a home connection** — Reddit's JSON keeps working, but eBay/Chrono24 coverage may be thinner on Actions than running locally. Check a few run logs.
+- **Datacenter IPs get bot-blocked more than a home connection** — the RSS discovery feed works on Actions, but old.reddit comment pages (used to recover a seller's asking price) 403 from GitHub's IPs, so prices fill in only on a later local run. Check a few run logs.
 - Local-run mode still works too: set `NTFY_TOPIC`, then `python watch_monitor.py` (see `GITHUB_ACTIONS_SETUP.md`).

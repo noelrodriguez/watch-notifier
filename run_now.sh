@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 # Make Homebrew/system python visible even under cron's minimal PATH.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-# Optional local secrets (e.g. NTFY_TOPIC override, TELEGRAM_*). Safe to omit;
+# Optional local secrets (e.g. NTFY_TOPIC override, ANTHROPIC_API_KEY). Safe to omit;
 # watch_monitor.py falls back to its built-in topic. .env is git-ignored.
 [ -f .env ] && set -a && . ./.env && set +a
 exec python3 watch_monitor.py "$@"
