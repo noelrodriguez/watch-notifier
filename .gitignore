@@ -31,3 +31,4 @@ env/
 # Claude Code: track shared skills under .claude/skills, ignore local-only bits
 .claude/settings.local.json
 .claude/worktrees/
+.claude/launch.json
