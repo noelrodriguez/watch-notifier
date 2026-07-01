@@ -39,7 +39,7 @@ def watches():
     return jsonify(_load_watches())
 
 
-# Keep in sync with slugify() in watch_monitor.py (separate process, no shared import).
+# Watch-id slug from brand + model (this app is the only place watch ids are minted).
 def _slugify(brand, model):
     raw = f"{brand} {model}".lower()
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", raw)).strip("-")

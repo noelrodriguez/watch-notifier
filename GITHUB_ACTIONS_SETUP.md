@@ -105,7 +105,7 @@ Point it at a failed Actions run log and it can diagnose from there.
 | Topic | What to expect |
 |---|---|
 | **Timing** | GitHub cron is **UTC** and scheduled runs are often **delayed 10–30 min** under load. Fine for hourly deal checks; not for to-the-second precision. |
-| **Datacenter IP blocking** | eBay and especially **Chrono24 may block GitHub's IPs** more than your home network would. Reddit's JSON keeps working. So cloud coverage can be slightly weaker than running on your Mac — check a few run logs to see what each source returns. |
+| **Datacenter IP blocking** | The RSS discovery feed works on GitHub's IPs, but **old.reddit comment pages 403** from datacenter IPs — so a seller's asking price (recovered from the OP comment) fills in only on a later local run, not on Actions. Check a few run logs. |
 | **60-day inactivity** | GitHub disables scheduled workflows if a repo has no activity for 60 days. The state-commit each run keeps it active, so this won't bite you. |
 | **Free minutes** | Private repo = 2,000 min/month free; this job uses ~720. No card needed. |
 | **Secrets** | Logs never print the topic; it's passed as an env var from the secret. |
@@ -120,5 +120,5 @@ Point it at a failed Actions run log and it can diagnose from there.
   workflow permissions to Read and write).
 - **Workflow not appearing in Actions tab:** the file must be at
   `.github/workflows/monitor.yml` exactly, and Actions must be enabled (step C3).
-- **Few/no eBay or Chrono24 results in logs:** likely datacenter-IP blocking (see F).
-  Reddit should still return results; tell Claude Code and it can add resilience.
+- **Deals show up but prices stay blank:** old.reddit comment pages 403 from GitHub's
+  datacenter IP (see F). Prices recover on a later local run; tell Claude Code for options.

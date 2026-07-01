@@ -7,7 +7,7 @@ from unittest.mock import patch
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import watch_monitor
-from watch_monitor import tag_deal, save_deals, slugify, size_signals, is_relevant, describe_response, parse_price, _to_price
+from watch_monitor import tag_deal, save_deals, size_signals, is_relevant, describe_response, parse_price, _to_price
 
 REGISTRY = [
     {
@@ -170,15 +170,6 @@ def test_backfill_skips_priced_and_nonreddit(tmp_path):
     assert "price_attempts" not in saved[0]
     assert saved[1]["price"] is None          # non-reddit -> untouched
     assert "price_attempts" not in saved[1]
-
-
-def test_slugify_brand_model():
-    assert slugify("Longines", "Master Collection Chrono Moonphase") == \
-        "longines-master-collection-chrono-moonphase"
-
-
-def test_slugify_strips_punctuation_and_collapses():
-    assert slugify("Tag Heuer", "Carrera (Calibre 16)") == "tag-heuer-carrera-calibre-16"
 
 
 def test_size_signals_40():
@@ -380,10 +371,8 @@ def test_fetch_op_price_skips_llm_when_regex_hits(monkeypatch):
 
 
 def test_default_source_toggles():
-    # Per request: Reddit on (works via RSS), eBay & Chrono24 off by default.
+    # Reddit is the only source and is on by default (works via RSS).
     assert watch_monitor.ENABLE_REDDIT is True
-    assert watch_monitor.ENABLE_EBAY is False
-    assert watch_monitor.ENABLE_CHRONO24 is False
 
 
 def test_flag_parses_truthy_and_falsy(monkeypatch):
@@ -395,18 +384,20 @@ def test_flag_parses_truthy_and_falsy(monkeypatch):
     assert watch_monitor._flag("X_FLAG", "on") is True   # falls back to default
 
 
-def test_gather_listings_runs_only_enabled_sources():
+def test_gather_listings_runs_reddit_when_enabled():
     with patch("watch_monitor.ENABLE_REDDIT", True), \
-         patch("watch_monitor.ENABLE_EBAY", False), \
-         patch("watch_monitor.ENABLE_CHRONO24", False), \
-         patch("watch_monitor.search_reddit", return_value=[{"id": "reddit:1"}]) as red, \
-         patch("watch_monitor.search_ebay") as ebay, \
-         patch("watch_monitor.search_chrono24") as chrono:
+         patch("watch_monitor.search_reddit", return_value=[{"id": "reddit:1"}]) as red:
         out = watch_monitor.gather_listings([])
     red.assert_called_once()
-    ebay.assert_not_called()
-    chrono.assert_not_called()
     assert out == [{"id": "reddit:1"}]
+
+
+def test_gather_listings_skips_reddit_when_disabled():
+    with patch("watch_monitor.ENABLE_REDDIT", False), \
+         patch("watch_monitor.search_reddit") as red:
+        out = watch_monitor.gather_listings([])
+    red.assert_not_called()
+    assert out == []
 
 
 def test_describe_response_includes_status_and_header():

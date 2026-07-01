@@ -2,9 +2,9 @@
 """
 Watch Tracker — secondary-market monitor for Longines Master Chrono Moonphase (40mm).
 
-Runs ONCE per invocation (schedule it hourly via Windows Task Scheduler).
-Scans r/watchexchange + eBay (+ Chrono24 best-effort), dedups against a local
-state file, and pushes any NEW listings to your phone via ntfy.sh.
+Runs ONCE per invocation (scheduled hourly via GitHub Actions or a local cron).
+Scans r/watchexchange, dedups against a local state file, and pushes any NEW
+listings to your phone via ntfy.sh.
 
 Setup + scheduling instructions are in README.md.
 """
@@ -30,10 +30,6 @@ from bs4 import BeautifulSoup
 NTFY_TOPIC  = os.getenv("NTFY_TOPIC") or "watchtracker-noelrodriguez-12251996"
 NTFY_SERVER = os.getenv("NTFY_SERVER") or "https://ntfy.sh"
 
-# Optional: also mirror alerts to a Telegram bot (leave blank to disable).
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID   = os.getenv("TELEGRAM_CHAT_ID", "")
-
 STATE_FILE    = Path(__file__).parent / "data" / "monitor_state.json"
 DEALS_FILE    = Path(__file__).parent / "data" / "deals.json"
 REGISTRY_FILE = Path(__file__).parent / "data" / "watches.json"
@@ -50,12 +46,8 @@ def _flag(name, default):
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 
 
-# Per-source toggles. Flip the default here or set the env var (e.g. ENABLE_EBAY=1).
-# Reddit is on (it works via the RSS feed); eBay (Akamai-blocked) and Chrono24
-# (anti-bot) are off by default until they're working again.
-ENABLE_REDDIT   = _flag("ENABLE_REDDIT", "1")
-ENABLE_EBAY     = _flag("ENABLE_EBAY", "0")
-ENABLE_CHRONO24 = _flag("ENABLE_CHRONO24", "0")
+# Reddit is the only working source (via the RSS feed). Off-switch for outages.
+ENABLE_REDDIT = _flag("ENABLE_REDDIT", "1")
 
 # Source fetch failures collected during a run. A non-empty list at the end of
 # main() triggers one ntfy alert so a broken scrape (e.g. Reddit 429) isn't silent.
@@ -201,12 +193,6 @@ def is_relevant(title, groups):
     return False
 
 
-def slugify(brand, model):
-    """Stable id from brand + model: lowercase, non-alphanumerics → single hyphens."""
-    raw = f"{brand} {model}".lower()
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", raw)).strip("-")
-
-
 def size_signals(size_mm):
     """Preferred-match size strings derived from a watch's case size."""
     if not size_mm:
@@ -316,107 +302,6 @@ def search_reddit(registry):
     return out
 
 
-def search_ebay(registry):
-    """eBay newly-listed search results (HTML scrape — usually works w/o JS).
-
-    Relevance is scoped per registry entry: a listing is kept if it matches the
-    search-term entry's own relevance_required_all groups.
-    """
-    out = []
-    seen_ids = set()
-    for entry in registry:
-        groups = entry.get("relevance_required_all", [])
-        for term in entry.get("search_terms", []):
-            url = ("https://www.ebay.com/sch/i.html"
-                   f"?_nkw={requests.utils.quote(term)}&_sop=10&LH_BIN=1")
-            try:
-                r = requests.get(url, headers={"User-Agent": UA}, timeout=HTTP_TIMEOUT)
-                if not r.ok:
-                    detail = describe_response(r)
-                    log(f"WARN: eBay search failed for '{term}': {detail}")
-                    RUN_ERRORS.append(f"eBay '{term}': HTTP {r.status_code}")
-                    time.sleep(1)
-                    continue
-                soup = BeautifulSoup(r.text, "html.parser")
-                for li in soup.select("li.s-item"):
-                    a = li.select_one("a.s-item__link")
-                    title_el = li.select_one(".s-item__title")
-                    price_el = li.select_one(".s-item__price")
-                    if not a or not title_el:
-                        continue
-                    title = title_el.get_text(" ", strip=True)
-                    if not is_relevant(title, groups) or "shop on ebay" in title.lower():
-                        continue
-                    link = a.get("href", "").split("?")[0]
-                    m = re.search(r"/itm/(\d+)", link)
-                    item_id = m.group(1) if m else link
-                    full_id = f"ebay:{item_id}"
-                    if full_id in seen_ids:
-                        continue
-                    seen_ids.add(full_id)
-                    out.append({
-                        "id": full_id,
-                        "title": title,
-                        "price": parse_price(price_el.get_text() if price_el else ""),
-                        "url": link,
-                        "source": "eBay",
-                    })
-            except Exception as e:
-                resp = getattr(e, "response", None)
-                if resp is not None:
-                    log(f"WARN: eBay search failed for '{term}': {e} | {describe_response(resp)}")
-                else:
-                    log(f"WARN: eBay search failed for '{term}': {e}")
-                RUN_ERRORS.append(f"eBay '{term}': {e}")
-            time.sleep(1)
-    return out
-
-
-def search_chrono24():
-    """Chrono24 best-effort. Often blocked by anti-bot; failures are non-fatal."""
-    out = []
-    ref_pages = [
-        "https://www.chrono24.com/longines/ref-l26734786.htm",  # L2.673.4.78.6 (steel bracelet)
-        "https://www.chrono24.com/longines/ref-l26734783.htm",  # L2.673.4.78.3 (leather)
-    ]
-    for url in ref_pages:
-        try:
-            r = requests.get(url, headers={"User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"},
-                timeout=HTTP_TIMEOUT)
-            if r.status_code != 200 or "captcha" in r.text.lower():
-                detail = describe_response(r)
-                log(f"WARN: Chrono24 blocked/non-200 for {url}: {detail}")
-                RUN_ERRORS.append(f"Chrono24 blocked/non-200 ({r.status_code}): {url}")
-                continue
-            soup = BeautifulSoup(r.text, "html.parser")
-            for a in soup.select("a[href*='--id']"):
-                href = a.get("href", "")
-                m = re.search(r"--id(\d+)", href)
-                if not m:
-                    continue
-                item_id = m.group(1)
-                title = a.get_text(" ", strip=True)[:120] or "Longines Master Collection L2.673.4.78.x"
-                link = href if href.startswith("http") else "https://www.chrono24.com" + href
-                out.append({
-                    "id": f"chrono24:{item_id}",
-                    "title": title,
-                    "price": parse_price(a.get_text()),
-                    "url": link,
-                    "source": "Chrono24",
-                })
-        except Exception as e:
-            resp = getattr(e, "response", None)
-            if resp is not None:
-                log(f"WARN: Chrono24 fetch failed for {url}: {e} | {describe_response(resp)}")
-            else:
-                log(f"WARN: Chrono24 fetch failed for {url}: {e}")
-            RUN_ERRORS.append(f"Chrono24 fetch failed: {e}")
-        time.sleep(1)
-    return out
-
-
 # -------------------------------------------------------------------- PUSH ---
 def push_ntfy(item):
     price = f"${item['price']}" if item.get("price") else "price?"
@@ -448,21 +333,6 @@ def push_ntfy(item):
         return False
 
 
-def push_telegram(item):
-    if not (TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID):
-        return
-    price = f"${item['price']}" if item.get("price") else "price?"
-    text = f"*{price} · {item['source']}*\n{item['title']}\n{item['url']}"
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
-            json={"chat_id": TELEGRAM_CHAT_ID, "text": text,
-                  "parse_mode": "Markdown", "disable_web_page_preview": False},
-            timeout=HTTP_TIMEOUT)
-    except Exception as e:
-        log(f"WARN: Telegram push failed: {e}")
-
-
 def notify_failure(errors):
     """Fire ONE ntfy alert summarizing source failures so a broken run isn't silent."""
     body = "\n".join(errors[:10])
@@ -484,9 +354,6 @@ def notify_failure(errors):
 # -------------------------------------------------------------------- MAIN ---
 def run_test_push():
     """`python watch_monitor.py --test` — fire one sample alert to confirm your phone receives it."""
-    if "REPLACE-ME" in NTFY_TOPIC:
-        log("ERROR: set NTFY_TOPIC (top of file or env var) to your own unique topic first.")
-        sys.exit(1)
     sample = {
         "id": "test:sample",
         "title": "TEST — Longines Master Chrono Moonphase 40mm L2.673.4.78.6, box & papers",
@@ -497,7 +364,6 @@ def run_test_push():
         "preferred_signals": ["40mm"],
     }
     ok = push_ntfy(sample)
-    push_telegram(sample)
     log("Test push sent — check your phone." if ok else "Test push FAILED — see error above.")
     sys.exit(0 if ok else 1)
 
@@ -651,33 +517,16 @@ def backfill_prices():
 
 
 def gather_listings(registry):
-    """Run each ENABLED source and return the combined raw listings.
-
-    Sources are toggled via the ENABLE_* config flags so a blocked source
-    (e.g. eBay/Chrono24 anti-bot) can be turned off without code surgery.
-    """
-    enabled = [n for n, on in (("reddit", ENABLE_REDDIT),
-                               ("eBay", ENABLE_EBAY),
-                               ("Chrono24", ENABLE_CHRONO24)) if on]
-    log(f"Sources enabled: {', '.join(enabled) if enabled else 'none'}")
-
-    found = []
-    if ENABLE_REDDIT:
-        found.extend(search_reddit(registry))
-    if ENABLE_EBAY:
-        found.extend(search_ebay(registry))
-    if ENABLE_CHRONO24:
-        found.extend(search_chrono24())
-    return found
+    """Return raw listings from the enabled source(s). Reddit is the only one."""
+    if not ENABLE_REDDIT:
+        log("Sources enabled: none")
+        return []
+    return search_reddit(registry)
 
 
 def main():
     if "--test" in sys.argv:
         run_test_push()
-
-    if "REPLACE-ME" in NTFY_TOPIC:
-        log("ERROR: set NTFY_TOPIC (top of file or env var) to your own unique topic first.")
-        sys.exit(1)
 
     RUN_ERRORS.clear()
     seen = load_state()
@@ -716,7 +565,6 @@ def main():
     pushed = 0
     for it in tagged_new[:MAX_PUSH_PER_RUN]:
         if push_ntfy(it):
-            push_telegram(it)
             seen.add(it["id"])
             pushed += 1
             log(f"  pushed: {it['id']} {it.get('price')} {it['title'][:60]}")
