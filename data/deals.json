@@ -606,7 +606,7 @@
   {
     "id": "reddit:1ujrz2w",
     "title": "[WTS] TAG Heuer Carrera Calibre Heuer 02 CBN2011.BA0642 Blue Dial Chronograph",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1ujrz2w/wts_tag_heuer_carrera_calibre_heuer_02/",
     "source": "r/watchexchange",
     "date_seen": "2026-06-30T15:33:03.175019+00:00",
@@ -618,7 +618,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 4
+    "price_attempts": 5
   },
   {
     "id": "reddit:1uk22un",
@@ -635,6 +635,6 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 1
+    "price_attempts": 2
   }
 ]
