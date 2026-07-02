@@ -669,5 +669,24 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uljqky",
+    "title": "[WTS] Longines Master Collection Chrono Moonphase L2.673.4.78.3",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uljqky/wts_longines_master_collection_chrono_moonphase/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-02T16:53:03.028816+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [
+      "L2.673.4.78.3"
+    ],
+    "dial": "silver",
+    "strap": "leather",
+    "is_hot": false,
+    "preferred_signals": [],
+    "price_attempts": 1
   }
 ]
