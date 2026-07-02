@@ -640,7 +640,7 @@
   {
     "id": "reddit:1ukr30m",
     "title": "[WTS] Tudor Black Bay Pro Full Kit",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1ukr30m/wts_tudor_black_bay_pro_full_kit/",
     "source": "r/watchexchange",
     "date_seen": "2026-07-01T18:01:03.622443+00:00",
@@ -652,7 +652,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 4
+    "price_attempts": 5
   },
   {
     "id": "reddit:1uku5kl",
