@@ -720,5 +720,22 @@
     "strap": null,
     "is_hot": true,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1umjvhz",
+    "title": "[WTS] Tudor Black Bay Pro GMT \u2013 Ref. 79470 \u2013 Full Set \u2013 Minty \u2013 08/2024",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1umjvhz/wts_tudor_black_bay_pro_gmt_ref_79470_full_set/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-03T18:16:03.004782+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": [],
+    "price_attempts": 1
   }
 ]
