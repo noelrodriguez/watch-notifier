@@ -688,5 +688,37 @@
     "is_hot": false,
     "preferred_signals": [],
     "price_attempts": 5
+  },
+  {
+    "id": "reddit:1um062c",
+    "title": "[WTS] 2026 BRAND NEW Tudor Black Bay Pro GMT 79470 $3,700",
+    "price": 3700,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1um062c/wts_2026_brand_new_tudor_black_bay_pro_gmt_79470/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-03T04:45:02.374096+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1um04hs",
+    "title": "[WTS] Tag Heuer Carrera 'Glassbox' Chronograph CBS2212.FC6535 $4,250",
+    "price": 4250,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1um04hs/wts_tag_heuer_carrera_glassbox_chronograph/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-03T04:45:02.374134+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
   }
 ]
