@@ -774,5 +774,22 @@
     "preferred_signals": [
       "39mm"
     ]
+  },
+  {
+    "id": "reddit:1unbcs8",
+    "title": "[WTS] Tag Heuer Carrera Chronograph 44mm (Steel & 18K rose gold ref. CBN2A5A.FC6481)",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1unbcs8/wts_tag_heuer_carrera_chronograph_44mm_steel_18k/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-04T16:07:03.223740+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": [],
+    "price_attempts": 1
   }
 ]
