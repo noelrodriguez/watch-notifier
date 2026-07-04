@@ -741,7 +741,7 @@
   {
     "id": "reddit:1umty2b",
     "title": "[WTS] Tudor Black Bay Pro GMT 39mm (2022) - Full Set / Mint Condition + Rare 3-Strap Bundle (OEM Bracelet, Fabric, & Hybrid Straps)",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1umty2b/wts_tudor_black_bay_pro_gmt_39mm_2022_full_set/",
     "source": "r/watchexchange",
     "date_seen": "2026-07-04T00:09:02.782764+00:00",
@@ -755,7 +755,7 @@
     "preferred_signals": [
       "39mm"
     ],
-    "price_attempts": 4
+    "price_attempts": 5
   },
   {
     "id": "reddit:1umw69z",
