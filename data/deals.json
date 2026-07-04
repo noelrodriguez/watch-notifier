@@ -724,7 +724,7 @@
   {
     "id": "reddit:1umjvhz",
     "title": "[WTS] Tudor Black Bay Pro GMT \u2013 Ref. 79470 \u2013 Full Set \u2013 Minty \u2013 08/2024",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1umjvhz/wts_tudor_black_bay_pro_gmt_ref_79470_full_set/",
     "source": "r/watchexchange",
     "date_seen": "2026-07-03T18:16:03.004782+00:00",
@@ -736,7 +736,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 4
+    "price_attempts": 5
   },
   {
     "id": "reddit:1umty2b",
@@ -755,6 +755,24 @@
     "preferred_signals": [
       "39mm"
     ],
-    "price_attempts": 1
+    "price_attempts": 2
+  },
+  {
+    "id": "reddit:1umw69z",
+    "title": "[WTS] 2025 TAG Heuer Carrera Glassbox Plum Chronograph 39mm CBS2219.FC6607 - $5,199 shipped express worldwide",
+    "price": 5199,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1umw69z/wts_2025_tag_heuer_carrera_glassbox_plum/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-04T04:39:01.480189+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": [
+      "39mm"
+    ]
   }
 ]
