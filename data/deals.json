@@ -828,5 +828,37 @@
     "preferred_signals": [
       "40mm"
     ]
+  },
+  {
+    "id": "reddit:1uocm0a",
+    "title": "[WTS] Firesale! Longines Master Moonphase 42mm - $1,750",
+    "price": 1750,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uocm0a/wts_firesale_longines_master_moonphase_42mm_1750/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-05T21:05:02.073905+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uod3c6",
+    "title": "[WTS] Big Drop \u2014 Rolex, Omega, Tudor & Glash\u00fctte \u2014 Submariner 16610, Speedmaster Pro, Seamaster, Aqua Terra, Black Bay 54, PanoMaticLunar | $4,175\u2013$10,850",
+    "price": 4175,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uod3c6/wts_big_drop_rolex_omega_tudor_glash\u00fctte/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-05T21:05:02.073941+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
