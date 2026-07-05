@@ -778,7 +778,7 @@
   {
     "id": "reddit:1unbcs8",
     "title": "[WTS] Tag Heuer Carrera Chronograph 44mm (Steel & 18K rose gold ref. CBN2A5A.FC6481)",
-    "price": null,
+    "price": -1,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1unbcs8/wts_tag_heuer_carrera_chronograph_44mm_steel_18k/",
     "source": "r/watchexchange",
     "date_seen": "2026-07-04T16:07:03.223740+00:00",
@@ -790,6 +790,23 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 4
+    "price_attempts": 5
+  },
+  {
+    "id": "reddit:1unmt23",
+    "title": "[WTS] Tudor Black Bay Pro",
+    "price": null,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1unmt23/wts_tudor_black_bay_pro/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-05T00:05:03.270646+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": [],
+    "price_attempts": 1
   }
 ]
