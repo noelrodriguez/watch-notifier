@@ -42,6 +42,13 @@ jobs:
           # Source of truth for the topic. Add it under
           # Settings -> Secrets and variables -> Actions -> NTFY_TOPIC
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          # Reddit OAuth (script-app password grant). When set, discovery + price
+          # recovery use oauth.reddit.com, which works from the runner's datacenter
+          # IP. If unset, the monitor falls back to anonymous RSS (discovery only).
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
         run: |
           if [ "${{ github.event.inputs.test_push }}" = "true" ]; then
             echo "Sending TEST push..."

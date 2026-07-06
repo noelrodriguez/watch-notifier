@@ -57,6 +57,26 @@ thing keeping others out, so don't publish it.)
 - Value: `watchtracker-noelrodriguez-12251996`
 - Save.
 
+### 1b. (Recommended) Add Reddit OAuth secrets — makes prices recover in the cloud
+
+Without these, the Action discovers deals via the anonymous RSS feed but **can't
+recover prices** (old.reddit comment pages 403 from GitHub's datacenter IP — prices
+then fill in only on a later local run). With a Reddit **script** app's credentials,
+discovery + price recovery go through `oauth.reddit.com`, which works from the runner.
+
+Add four repository secrets (same **New repository secret** flow as above):
+
+| Secret | Value |
+|---|---|
+| `REDDIT_CLIENT_ID` | The app id (shown under the app name at reddit.com/prefs/apps) |
+| `REDDIT_CLIENT_SECRET` | The app secret |
+| `REDDIT_USERNAME` | A Reddit account that is a **developer** on that app |
+| `REDDIT_PASSWORD` | That account's password |
+
+The account must be listed as a developer on the app (that's what the password grant
+requires). If all four are absent the monitor still runs — it just uses the anonymous
+fallback.
+
 ### 2. Give the workflow permission to push state back
 The job commits `data/monitor_state.json` back to the repo each run. That needs write access.
 - Repo → **Settings** → **Actions** → **General** → scroll to **Workflow permissions**
