@@ -49,5 +49,5 @@ is `MAX_PUSH_PER_RUN`.
 ## Caveats
 
 - GitHub cron is **UTC** and runs can lag **10–30 min** under load (fine for hourly).
-- **Datacenter IPs get bot-blocked more than a home connection** — the RSS discovery feed works on Actions, but old.reddit comment pages (used to recover a seller's asking price) 403 from GitHub's IPs, so prices fill in only on a later local run. Check a few run logs.
+- **Reddit OAuth makes prices work in the cloud (recommended).** With the four `REDDIT_*` secrets set (script-app password grant — see the setup guide), discovery and price recovery go through `oauth.reddit.com`, which works from GitHub's datacenter IPs. **Without** them the monitor falls back to the anonymous RSS feed (discovery works everywhere) and old.reddit comment pages for prices — but those 403 from GitHub's IPs, so prices then fill in only on a later local run.
 - Local-run mode still works too: set `NTFY_TOPIC`, then `python watch_monitor.py` (see `docs/GITHUB_ACTIONS_SETUP.md`).

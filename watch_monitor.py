@@ -21,6 +21,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
+from functools import lru_cache
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -41,6 +43,17 @@ UA = "watch-tracker-monitor/1.0 (personal use)"
 # Browser-like UA for old.reddit HTML (used to recover OP-comment prices).
 BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+
+# Reddit OAuth (script-app password grant). When all four are set, discovery and
+# price recovery go through oauth.reddit.com — which works from GitHub Actions'
+# datacenter IP (unlike anonymous access) and gives ~100 req/min. Any missing cred
+# falls back to the anonymous paths: RSS for discovery, old.reddit HTML for prices.
+REDDIT_CLIENT_ID     = os.getenv("REDDIT_CLIENT_ID")
+REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
+REDDIT_USERNAME      = os.getenv("REDDIT_USERNAME")
+REDDIT_PASSWORD      = os.getenv("REDDIT_PASSWORD")
+OAUTH_UA = os.getenv("REDDIT_USER_AGENT",
+                     f"python:watch-notifier:1.0 (by /u/{REDDIT_USERNAME or 'unknown'})")
 
 
 def _flag(name, default):
@@ -228,6 +241,42 @@ def describe_response(r):
 ATOM = "{http://www.w3.org/2005/Atom}"  # namespace prefix for Reddit's RSS/Atom feed
 
 
+@lru_cache(maxsize=1)
+def reddit_token():
+    """Return an OAuth bearer token via the script-app password grant, or None.
+
+    Cached for the life of the process (one run): the token is valid ~24h but we
+    only need it for this run, so fetch once and reuse. Returns None if any of the
+    four REDDIT_* creds are unset or the grant fails — callers then fall back to the
+    anonymous RSS/HTML paths. ponytail: per-run cache (lru_cache), not persisted — a
+    token written to disk/repo would be a secret to leak for no gain (we run hourly).
+    Tests reset it with reddit_token.cache_clear().
+    """
+    if not all((REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD)):
+        return None
+    try:
+        r = requests.post(
+            "https://www.reddit.com/api/v1/access_token",
+            auth=(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET),
+            data={"grant_type": "password",
+                  "username": REDDIT_USERNAME, "password": REDDIT_PASSWORD},
+            headers={"User-Agent": OAUTH_UA}, timeout=HTTP_TIMEOUT)
+        if not r.ok:
+            log(f"WARN: Reddit OAuth token fetch failed: {describe_response(r)}")
+            return None
+        return r.json().get("access_token")
+    except Exception as e:
+        log(f"WARN: Reddit OAuth token error: {e}")
+        return None
+
+
+def _oauth_get(path, token, params=None):
+    """GET an oauth.reddit.com path with the bearer token."""
+    return requests.get(f"https://oauth.reddit.com{path}",
+                        headers={"User-Agent": OAUTH_UA, "Authorization": f"bearer {token}"},
+                        params=params, timeout=HTTP_TIMEOUT)
+
+
 def _get_reddit_rss(url):
     """GET a Reddit RSS URL, retrying ONCE on 429 after the rate-limit reset.
 
@@ -250,7 +299,59 @@ def _get_reddit_rss(url):
 
 
 def search_reddit(registry):
-    """r/watchexchange via the public RSS search feed (search.rss). No auth.
+    """r/watchexchange discovery.
+
+    Uses the authenticated OAuth JSON search when Reddit creds are configured (works
+    on Actions, ~100 req/min); otherwise falls back to the anonymous RSS feed
+    (discovery-only, rate-limited ~1 req/min).
+    """
+    token = reddit_token()
+    if token:
+        return _search_reddit_oauth(registry, token)
+    return _search_reddit_rss(registry)
+
+
+def _search_reddit_oauth(registry, token):
+    """Discovery via oauth.reddit.com/r/Watchexchange/search (authenticated JSON)."""
+    out = []
+    seen_ids = set()
+    for entry in registry:
+        groups = entry.get("relevance_required_all", [])
+        for term in entry.get("search_terms", []):
+            try:
+                r = _oauth_get("/r/Watchexchange/search", token, params={
+                    "q": term, "restrict_sr": 1, "sort": "new", "limit": 50, "raw_json": 1})
+                if not r.ok:
+                    log(f"WARN: Reddit OAuth search failed for '{term}': {describe_response(r)}")
+                    RUN_ERRORS.append(f"Reddit '{term}': HTTP {r.status_code}")
+                    continue
+                for child in r.json().get("data", {}).get("children", []):
+                    d = child.get("data", {})
+                    title = html.unescape(d.get("title", "") or "")
+                    if not is_relevant(title, groups):
+                        continue
+                    low = title.lower()
+                    if low.startswith("[wtb") or "sold" in low:
+                        continue
+                    item_id = f"reddit:{d.get('id')}"
+                    if item_id in seen_ids:
+                        continue
+                    seen_ids.add(item_id)
+                    out.append({
+                        "id": item_id,
+                        "title": title,
+                        "price": parse_price(title),
+                        "url": "https://www.reddit.com" + (d.get("permalink") or ""),
+                        "source": "r/watchexchange",
+                    })
+            except Exception as e:
+                log(f"WARN: Reddit OAuth search failed for '{term}': {e}")
+                RUN_ERRORS.append(f"Reddit '{term}': {e}")
+    return out
+
+
+def _search_reddit_rss(registry):
+    """Discovery via the public RSS search feed (search.rss). No auth.
 
     Reddit's anonymous JSON API (search.json and the other *.json endpoints) now
     returns 403 for unauthenticated clients regardless of User-Agent or IP, but
@@ -417,17 +518,76 @@ def extract_price_llm(comment_text, title=None):
 
 
 def fetch_op_price(post_url, title=None):
-    """Best-effort: return the asking price from the OP's comment on a thread, or None.
+    """Best-effort asking price from the OP's comment on a thread, or None.
 
-    On r/watchexchange the price is usually in the seller's (OP's) own comment, which
-    the search RSS feed never exposes. old.reddit server-renders the full comment tree
-    and tags OP comments with the 'submitter' class, so we fetch the thread there and
-    parse the price from the OP's comment. Any failure returns None — the listing still
-    links through, so a miss just leaves the price blank (not a hard error).
+    Uses the OAuth comment API when Reddit creds are configured — which works from
+    GitHub Actions' datacenter IP; otherwise old.reddit HTML, which 403s from
+    datacenter IPs (so recovery is residential-only without creds). Either way a
+    miss just leaves the price blank; the listing still links through.
+    """
+    if not post_url:
+        return None
+    token = reddit_token()
+    if token:
+        return _op_price_oauth(post_url, token, title)
+    return _op_price_html(post_url, title)
 
-    The cheap regex (parse_price) is tried first on every OP comment; only if it finds
-    nothing do we fall back to extract_price_llm on the most likely OP comment, for
-    prices the regex can't read (e.g. markdown-wrapped "**2700**", odd phrasing).
+
+def _op_price_oauth(post_url, token, title=None):
+    """Recover the OP price via oauth.reddit.com/comments/{id} (authenticated JSON).
+
+    The API flags the seller's comments with is_submitter, so we scan those, trying
+    the cheap regex first and falling back to extract_price_llm on the longest
+    digit-bearing OP comment the regex can't read — same policy as the HTML path.
+    """
+    m = re.search(r"/comments/([a-z0-9]+)", post_url)
+    if not m:
+        return None
+    article_id = m.group(1)
+    params = {"limit": 100, "depth": 1, "raw_json": 1}
+    try:
+        r = _oauth_get(f"/comments/{article_id}", token, params=params)
+        if r.status_code == 429:
+            try:
+                wait = min(int(r.headers.get("x-ratelimit-reset", "5")) + 1, 65)
+            except ValueError:
+                wait = 5
+            log(f"INFO: OAuth OP-price rate-limited for {post_url}; waiting {wait}s then retrying.")
+            time.sleep(wait)
+            r = _oauth_get(f"/comments/{article_id}", token, params=params)
+        if not r.ok:
+            log(f"WARN: OAuth OP-price fetch failed for {post_url}: {describe_response(r)}")
+            return None
+        comments = r.json()[1]["data"]["children"]
+    except (ValueError, IndexError, KeyError) as e:
+        log(f"WARN: OAuth OP-price parse error for {post_url}: {e}")
+        return None
+    except Exception as e:
+        log(f"WARN: OAuth OP-price error for {post_url}: {e}")
+        return None
+    best = ""  # longest digit-bearing OP comment, kept for the LLM fallback
+    for c in comments:
+        cd = c.get("data", {})
+        if cd.get("is_submitter"):
+            body = cd.get("body", "") or ""
+            price = parse_price(body, loose=True)
+            if price is not None:
+                return price
+            if re.search(r"\d", body) and len(body) > len(best):
+                best = body
+    if best:
+        return extract_price_llm(best, title)
+    return None
+
+
+def _op_price_html(post_url, title=None):
+    """Recover the OP price by scraping old.reddit HTML (anonymous, no creds).
+
+    old.reddit server-renders the full comment tree and tags OP comments with the
+    'submitter' class. The cheap regex (parse_price) is tried first on every OP
+    comment; only if it finds nothing do we fall back to extract_price_llm on the
+    most likely OP comment (e.g. markdown-wrapped "**2700**", odd phrasing).
+    403s from datacenter IPs, so this path is residential-only.
     """
     if not post_url:
         return None
@@ -494,14 +654,14 @@ def backfill_prices():
     Re-fetch those here, up to PRICE_BACKFILL_MAX_ATTEMPTS times; on the final miss,
     flag price = PRICE_GAVE_UP (-1) so a persistent blank is visible in the web app
     instead of an indistinguishable null. Deals already flagged -1 are re-attempted
-    too: they usually gave up only because the datacenter IP was 403'd, and a
-    residential run can read them fine.
+    too: they usually gave up only because the datacenter IP was 403'd, and an
+    OAuth-enabled or residential run can read them fine.
     """
-    # old.reddit comment pages hard-403 from GitHub Actions' datacenter IP, so every
-    # attempt there fails and only burns the retry budget → false -1 give-ups. Price
-    # recovery is residential-only; skip backfill on Actions and let a local run do it.
-    # ponytail: GITHUB_ACTIONS is the canonical "am I on a runner" env signal.
-    if os.getenv("GITHUB_ACTIONS"):
+    # Price recovery must actually read the OP comment. With OAuth creds that works
+    # anywhere (incl. Actions). WITHOUT them we fall back to old.reddit HTML, which
+    # 403s from Actions' datacenter IP — there, attempts would only burn the retry
+    # budget into false -1 give-ups, so skip backfill in that (Actions + no-OAuth) case.
+    if os.getenv("GITHUB_ACTIONS") and not reddit_token():
         return
     if not DEALS_FILE.exists():
         return
