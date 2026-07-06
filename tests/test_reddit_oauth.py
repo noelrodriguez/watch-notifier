@@ -165,6 +165,18 @@ def test_op_price_oauth_falls_back_to_llm(monkeypatch):
     assert watch_monitor._op_price_oauth(_POST_URL, "tok") == 2700
 
 
+def test_op_price_oauth_anchors_on_matched_watch(monkeypatch):
+    # Multi-watch OP comment: $8,500 (Rolex) is first, but the matched Longines line is $4,175.
+    body = ("Rolex Submariner — $8,500 shipped\n"
+            "Longines Master Moonphase L2.673.4.78.6 — $4,175 shipped")
+    resp = _comments_resp([body])
+    monkeypatch.setattr(watch_monitor, "_oauth_get", lambda *a, **k: resp)
+    watch = {"refs": [{"ref": "L2.673.4.78.6"}],
+             "relevance_required_all": [["longines", "master", "moonphase"]],
+             "search_terms": []}
+    assert watch_monitor._op_price_oauth(_POST_URL, "tok", "title", watch) == 4175
+
+
 def test_op_price_oauth_none_on_403(monkeypatch):
     resp = MagicMock(ok=False, status_code=403, headers={}, text="blocked")
     monkeypatch.setattr(watch_monitor, "_oauth_get", lambda *a, **k: resp)

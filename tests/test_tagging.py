@@ -594,10 +594,88 @@ def test_enrich_reddit_prices_fills_only_priceless_reddit_items():
     # item_c is not a reddit source — must remain None
     assert items[2]["price"] is None
 
-    # fetch_op_price called exactly once, with item_a's url + title
-    mock_fetch.assert_called_once_with(item_a["url"], item_a["title"])
+    # fetch_op_price called exactly once, with item_a's url + title + matched watch
+    # (None here — no registry passed, so nothing to anchor on)
+    mock_fetch.assert_called_once_with(item_a["url"], item_a["title"], None)
     # politeness sleep called once for the one fetch
     mock_sleep.assert_called_once_with(1)
+
+
+# ------------------------------- multi-watch price anchoring (_pick_op_price) ---
+# On a post selling several watches, the OP comment lists each with its own price;
+# recovery must return the MATCHED watch's price, not simply the first one found.
+
+_LONGINES_WATCH = {
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "search_terms": ["longines master chrono moonphase"],
+    "relevance_required_all": [["longines", "master", "moonphase"]],
+    "refs": [{"ref": "L2.673.4.78.6"}],
+}
+
+_MULTI_WATCH_COMMENT = (
+    "Rolex Submariner 16610 — $8,500 shipped\n"
+    "Longines Master Moonphase L2.673.4.78.6 — $4,175 shipped\n"
+    "Omega Speedmaster — $6,000"
+)
+
+
+def test_match_entry_finds_watch_and_refs():
+    entry, refs = watch_monitor._match_entry(
+        "Longines Master Moonphase L2.673.4.78.6", [_LONGINES_WATCH])
+    assert entry is _LONGINES_WATCH
+    assert [r["ref"] for r in refs] == ["L2.673.4.78.6"]
+
+
+def test_match_entry_no_match():
+    assert watch_monitor._match_entry("Casio F91W", [_LONGINES_WATCH]) == (None, [])
+
+
+def test_price_anchor_groups_includes_ref_and_relevance():
+    groups = watch_monitor.price_anchor_groups(_LONGINES_WATCH)
+    assert ["l2.673.4.78.6"] in groups              # ref, lowercased
+    assert ["longines", "master", "moonphase"] in groups
+
+
+def test_price_anchor_groups_empty_for_none():
+    assert watch_monitor.price_anchor_groups(None) == []
+
+
+def test_pick_op_price_anchors_on_matched_watch():
+    # $8,500 (Rolex) comes first; the matched Longines line is $4,175.
+    price = watch_monitor._pick_op_price([_MULTI_WATCH_COMMENT], _LONGINES_WATCH, "t")
+    assert price == 4175
+
+
+def test_pick_op_price_anchors_on_ref_alone():
+    # relevance tokens absent from the target line; the ref still pins it.
+    comment = "some rolex — $8,500\nblah L2.673.4.78.6 blah — $4,175"
+    assert watch_monitor._pick_op_price([comment], _LONGINES_WATCH) == 4175
+
+
+def test_pick_op_price_falls_back_to_first_when_no_anchor(monkeypatch):
+    # watch given, but the comment names none of its tokens → original first-price behavior.
+    monkeypatch.setattr(watch_monitor, "extract_price_llm", lambda *a, **k: None)
+    comment = "Rolex — $8,500\nOmega — $6,000"
+    assert watch_monitor._pick_op_price([comment], _LONGINES_WATCH) == 8500
+
+
+def test_pick_op_price_no_watch_returns_first():
+    # no matched watch → cannot anchor, keep the first-price behavior.
+    assert watch_monitor._pick_op_price([_MULTI_WATCH_COMMENT], None) == 8500
+
+
+def test_pick_op_price_llm_fallback_receives_model(monkeypatch):
+    captured = {}
+
+    def fake_llm(text, title=None, model=None):
+        captured["model"] = model
+        return 2700
+
+    monkeypatch.setattr(watch_monitor, "extract_price_llm", fake_llm)
+    # markdown-wrapped price the regex can't read, and no anchor line matches.
+    assert watch_monitor._pick_op_price(["box and papers **2700**"], _LONGINES_WATCH, "t") == 2700
+    assert captured["model"] == "Master Collection Chrono Moonphase"
 
 
 # ------------------------------------------------------------------ parse_price / _to_price ---
