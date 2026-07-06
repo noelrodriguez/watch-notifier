@@ -1,8 +1,23 @@
 # Watch Tracker — Handoff Summary
 
 **Purpose:** Everything needed to pick this project up and continue exactly where we left off.
-**Last session:** 2026-06-29
+**Last session:** 2026-07-05
 **Owner:** Noel — noel.rodriguez.shopping@gmail.com
+
+---
+
+## 0. Latest (2026-07-05) — read this first
+
+Key deltas since 2026-06-29 (older sections below may still say the old thing):
+
+- **This doc moved** to `docs/HANDOFF_SUMMARY.md` (root tidy, PR #30). Root is now 11 tracked files; standalone docs live in `docs/`.
+- **Monitor is Reddit-only now.** The first audit cleanup (PR #29) **deleted** the disabled `search_ebay`, `search_chrono24`, the `push_telegram` mirror, dead `REPLACE-ME` guards, and a duplicate `slugify`. Also **deleted the entire Streamlit UI** (`webapp/streamlit/`) — Flask is the only web app. Net −352 lines, −2 deps. Test suite is now **95 passing** (`watch_monitor.py` kept as a single file on purpose).
+- **Flask Watches view + Add/Edit modal were polished** (PR #28) onto the "Midnight Desk" design system (they'd drifted). Deals view was already on-system.
+- **🔑 Reddit OAuth is DEAD, not just gated.** Self-serve app creation at `reddit.com/prefs/apps` is **closed** ("You cannot create any more applications…"); the 2025 crackdown requires manual pre-approval for ALL new apps incl. hobby. Viable only if pre-cutoff app credentials already exist. Don't plan around "register a script app."
+- **eBay rebuild is now greenfield** — the old HTML scrape is deleted, so a rebuild starts clean on eBay's official **Browse API**.
+- **Two open decisions with a chosen direction (not yet built):**
+  1. *Web app "reachable from anywhere":* chosen path = keep the app **running locally + expose via Cloudflare Tunnel** (public URL, full app). Needs **auth added** (currently none) and must **not** expose `/api/push`. **Gating question unanswered:** is the host an always-on/at-home machine (viable) or a daily-carry laptop (fragile — sleeps kill cron + site)?
+  2. *Price-recovery 403 / hosting:* going **fully local collapses three problems at once** — a local cron replaces GitHub Actions, the residential IP fixes the price-recovery 403 (no proxy needed), and it serves the web app. Alternative if not local: route only the comment fetch through a **residential proxy / fetch-as-a-service** ("FetchLayer"), keeping free Actions hosting. Moving to another *cloud* does NOT help — the lever is exit-IP + auth, not the host.
 
 ---
 
@@ -11,7 +26,7 @@
 - **Goal:** Monitor secondary watch markets and get phone alerts for good deals, starting with the **Longines Master Collection Chrono Moonphase, 40mm**.
 - **Built & working:** A Python monitor (`watch_monitor.py`) that runs **hourly on GitHub Actions** (`.github/workflows/monitor.yml`), scans **r/watchexchange via its RSS feed**, tags each listing with brand/model/price (recovering the price from the seller's comment when it's not in the title), dedupes, and pushes new finds to the phone via **ntfy.sh** (free, no account). A **Flask web app** (`webapp/flask/`) browses saved deals (`data/deals.json`) and manages the watch registry.
 - **Deployment:** Live on GitHub Actions (hourly; `NTFY_TOPIC` etc. in repo secrets). Can also be run locally — `./run_now.sh` for a one-off scan, `./install_cron.sh` for an hourly local cron. A failed source now fires a single ntfy alert instead of failing silently.
-- **Source status (important):** Reddit's anonymous JSON API is **403-blocked** (their Nov-2025 policy) — we switched to the **RSS feed**, which is rate-limited (~1 req/min/IP). **eBay** (Akamai bot-wall) and **Chrono24** (anti-bot) are **403'd and disabled by default** via `ENABLE_EBAY` / `ENABLE_CHRONO24` toggles. Official Reddit OAuth needs an approval Noel expects to fail.
+- **Source status (important):** Reddit's anonymous JSON API is **403-blocked** (their Nov-2025 policy) — we use the **RSS feed**, rate-limited (~1 req/min/IP). **r/watchexchange is the only source** — eBay (Akamai) and Chrono24 (anti-bot) scrapers were **deleted** in the 2026-07-05 cleanup (see §0). Official Reddit OAuth is **not an option: self-serve app registration is closed** (see §0).
 - **⚠️ THE big known limitation (discovered 2026-06-29):** the RSS feed indexes a post at *submission*, but the seller posts the price in a *comment* moments later — and **old.reddit comment pages return HTTP 403 ("blocked due to a network policy") to GitHub Actions' datacenter IP**. So the hourly Action discovers deals fine but **cannot recover their prices** — they save `price: null`. Price recovery works only from a **residential IP** (i.e. running locally). See §6 and §8.
 - **Price recovery is two-layered:** a regex (`parse_price`) handles the common `$3,399` / `asking 1750` / `1750 shipped` formats; when it can't read a comment (e.g. markdown-wrapped `**2700**`, odd phrasing), a **Claude fallback** (`extract_price_llm`, default model `claude-sonnet-4-6`) extracts it. Both run inside `fetch_op_price`, so both are subject to the same 403 (local-only).
 - **Explicitly declined:** Headless-browser (Playwright) Chrono24 upgrade — not wanted for now.
