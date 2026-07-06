@@ -860,5 +860,23 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uok4q8",
+    "title": "[WTS] Longines Master Collection, Triple Date Moonphase 40mm Box and Card - $1,750",
+    "price": 1750,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uok4q8/wts_longines_master_collection_triple_date/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-06T03:49:01.155207+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": [
+      "40mm"
+    ]
   }
 ]
