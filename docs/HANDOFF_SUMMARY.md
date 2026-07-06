@@ -6,14 +6,71 @@
 
 ---
 
-## 0. Latest (2026-07-05) — read this first
+## 0. Latest (2026-07-05, session 2) — read this first
+
+Reddit OAuth landed — the biggest change since this project began. It supersedes
+several statements below (esp. "OAuth is DEAD" and "THE big known limitation" — those
+are annotated inline).
+
+- **🎯 Reddit OAuth shipped (PR #36) — closes the #1 open gap.** The monitor now uses a
+  Reddit **script-app OAuth token** (password grant) for BOTH discovery and price
+  recovery via `oauth.reddit.com`, which **works from GitHub Actions' datacenter IP** —
+  bypassing the old.reddit 403. The hourly Action can now recover prices itself; the
+  "must run locally to fill in prices" limitation is gone (once secrets are set). Bonus:
+  ~100 req/min vs the RSS feed's ~1/min (kills the 429s).
+  - **Nuance on "OAuth is dead":** self-serve app *registration* is still closed. What
+    changed is Noel got credentials for a **pre-existing** script app (his brother's;
+    Noel is a developer on it). You still can't create a new app — this only works
+    because an old one exists.
+  - **Fallback preserved:** with no `REDDIT_*` creds the monitor falls back to the
+    anonymous RSS feed (discovery) + old.reddit HTML (prices, residential-only), so it
+    keeps working either way.
+  - **⚠️ ACTION REQUIRED to activate in the cloud:** add four repo secrets —
+    `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`
+    (Settings → Secrets and variables → Actions). Until then the Action uses the
+    anonymous fallback (no cloud price recovery). Setup table: `docs/GITHUB_ACTIONS_SETUP.md` §1b.
+  - **Validated** before building via a throwaway spike (PR #35, since deleted): token
+    grant + comment fetch confirmed from BOTH residential and datacenter (Actions) IPs.
+    Token TTL ~24h.
+  - **Credential decision:** password grant, not a refresh token — refresh tokens need
+    the auth-code flow / a web-app type that can't be created (registration closed), and
+    script apps don't issue them. Password lives in CI secrets. Optional future
+    mitigation: a dedicated throwaway Reddit account as developer, so the stored password
+    isn't Noel's main account.
+  - Key funcs: `reddit_token()` (lru_cache, per-run), `_search_reddit_oauth` /
+    `_search_reddit_rss`, `_op_price_oauth` / `_op_price_html` — the dispatchers
+    `search_reddit` / `fetch_op_price` pick OAuth when a token exists, else the anon path.
+
+- **Price backfill bug fixed (PR #34).** Two compounding bugs left 8 deals stuck at
+  `price: -1`: (1) `backfill_prices()` never retried `-1` ("gave up") deals — now it
+  retries `None` AND `-1`; (2) Actions' 403s burned the 5-attempt budget into false
+  `-1`s — the `GITHUB_ACTIONS` skip is now **conditional on NOT having an OAuth token**
+  (with OAuth, Actions recovers fine; without it, still skip so the HTML 403 can't burn
+  the budget). Recovered all 8 stuck prices; `data/deals.json` now 0 missing.
+
+- **LLM price fallback moved to the `claude` CLI (PR #34).** `extract_price_llm` now
+  shells `claude -p` (Claude Code **subscription**, no `ANTHROPIC_API_KEY` /
+  pay-per-token). Dropped the `anthropic` package dep. Needs the `claude` CLI on the
+  machine running recovery (present locally; degrades to None if missing).
+
+- **Test suite: 113 passing** (was 98). New `tests/test_reddit_oauth.py` plus the
+  `-1`-retry / CLI-fallback tests.
+
+- **Deferred follow-up (task chip created):** multi-watch posts where `parse_price` picks
+  the wrong price among several (e.g. post `1uod3c6` "Big Drop", stored $8500 vs actual
+  $4175). Both price paths call `parse_price` on the OP comment; needs to anchor on the
+  matched watch's ref/model. Explicitly scoped OUT of the OAuth PR.
+
+---
+
+## 0b. Latest (2026-07-05, session 1)
 
 Key deltas since 2026-06-29 (older sections below may still say the old thing):
 
 - **This doc moved** to `docs/HANDOFF_SUMMARY.md` (root tidy, PR #30). Root is now 11 tracked files; standalone docs live in `docs/`.
 - **Monitor is Reddit-only now.** The first audit cleanup (PR #29) **deleted** the disabled `search_ebay`, `search_chrono24`, the `push_telegram` mirror, dead `REPLACE-ME` guards, and a duplicate `slugify`. Also **deleted the entire Streamlit UI** (`webapp/streamlit/`) — Flask is the only web app. Net −352 lines, −2 deps. Test suite is now **95 passing** (`watch_monitor.py` kept as a single file on purpose).
 - **Flask Watches view + Add/Edit modal were polished** (PR #28) onto the "Midnight Desk" design system (they'd drifted). Deals view was already on-system.
-- **🔑 Reddit OAuth is DEAD, not just gated.** Self-serve app creation at `reddit.com/prefs/apps` is **closed** ("You cannot create any more applications…"); the 2025 crackdown requires manual pre-approval for ALL new apps incl. hobby. Viable only if pre-cutoff app credentials already exist. Don't plan around "register a script app."
+- **🔑 Reddit OAuth is DEAD, not just gated.** Self-serve app creation at `reddit.com/prefs/apps` is **closed** ("You cannot create any more applications…"); the 2025 crackdown requires manual pre-approval for ALL new apps incl. hobby. Viable only if pre-cutoff app credentials already exist. Don't plan around "register a script app." — **UPDATE (session 2): those "pre-cutoff credentials already exist" (brother's app) and OAuth is now shipped and working. Registration is still closed, but OAuth itself is live. See §0.**
 - **eBay rebuild is now greenfield** — the old HTML scrape is deleted, so a rebuild starts clean on eBay's official **Browse API**.
 - **Two open decisions with a chosen direction (not yet built):**
   1. *Web app "reachable from anywhere":* chosen path = keep the app **running locally + expose via Cloudflare Tunnel** (public URL, full app). Needs **auth added** (currently none) and must **not** expose `/api/push`. **Gating question unanswered:** is the host an always-on/at-home machine (viable) or a daily-carry laptop (fragile — sleeps kill cron + site)?
@@ -26,9 +83,9 @@ Key deltas since 2026-06-29 (older sections below may still say the old thing):
 - **Goal:** Monitor secondary watch markets and get phone alerts for good deals, starting with the **Longines Master Collection Chrono Moonphase, 40mm**.
 - **Built & working:** A Python monitor (`watch_monitor.py`) that runs **hourly on GitHub Actions** (`.github/workflows/monitor.yml`), scans **r/watchexchange via its RSS feed**, tags each listing with brand/model/price (recovering the price from the seller's comment when it's not in the title), dedupes, and pushes new finds to the phone via **ntfy.sh** (free, no account). A **Flask web app** (`webapp/flask/`) browses saved deals (`data/deals.json`) and manages the watch registry.
 - **Deployment:** Live on GitHub Actions (hourly; `NTFY_TOPIC` etc. in repo secrets). Can also be run locally — `./run_now.sh` for a one-off scan, `./install_cron.sh` for an hourly local cron. A failed source now fires a single ntfy alert instead of failing silently.
-- **Source status (important):** Reddit's anonymous JSON API is **403-blocked** (their Nov-2025 policy) — we use the **RSS feed**, rate-limited (~1 req/min/IP). **r/watchexchange is the only source** — eBay (Akamai) and Chrono24 (anti-bot) scrapers were **deleted** in the 2026-07-05 cleanup (see §0). Official Reddit OAuth is **not an option: self-serve app registration is closed** (see §0).
-- **⚠️ THE big known limitation (discovered 2026-06-29):** the RSS feed indexes a post at *submission*, but the seller posts the price in a *comment* moments later — and **old.reddit comment pages return HTTP 403 ("blocked due to a network policy") to GitHub Actions' datacenter IP**. So the hourly Action discovers deals fine but **cannot recover their prices** — they save `price: null`. Price recovery works only from a **residential IP** (i.e. running locally). See §6 and §8.
-- **Price recovery is two-layered:** a regex (`parse_price`) handles the common `$3,399` / `asking 1750` / `1750 shipped` formats; when it can't read a comment (e.g. markdown-wrapped `**2700**`, odd phrasing), a **Claude fallback** (`extract_price_llm`, default model `claude-sonnet-4-6`) extracts it. Both run inside `fetch_op_price`, so both are subject to the same 403 (local-only).
+- **Source status (important):** Reddit's anonymous JSON API is **403-blocked** (their Nov-2025 policy). **r/watchexchange is the only source** — eBay (Akamai) and Chrono24 (anti-bot) scrapers were **deleted** in the 2026-07-05 cleanup (see §0). **UPDATE (session 2): discovery now prefers authenticated OAuth (`oauth.reddit.com`) when `REDDIT_*` secrets are set, falling back to the RSS feed (~1 req/min/IP) otherwise. See §0.**
+- **⚠️ THE big known limitation (discovered 2026-06-29) — NOW RESOLVED (session 2).** The RSS feed indexes a post at *submission*, but the seller posts the price in a *comment* moments later, and **old.reddit comment pages return HTTP 403 to GitHub Actions' datacenter IP** — so the Action historically couldn't recover prices (residential-only). **With Reddit OAuth (PR #36), price recovery goes through `oauth.reddit.com`, which works on Actions — the Action recovers prices itself once the `REDDIT_*` secrets are added.** Without the secrets, the old residential-only limitation still applies (RSS/HTML fallback). See §0.
+- **Price recovery is two-layered:** a regex (`parse_price`) handles the common `$3,399` / `asking 1750` / `1750 shipped` formats; when it can't read a comment (e.g. markdown-wrapped `**2700**`, odd phrasing), an **LLM fallback** (`extract_price_llm`) extracts it. **UPDATE (session 2): the fallback now shells the local `claude` CLI (`claude -p`, subscription — no `ANTHROPIC_API_KEY`), and the whole path works on Actions via OAuth (no longer local-only).**
 - **Explicitly declined:** Headless-browser (Playwright) Chrono24 upgrade — not wanted for now.
 
 ---
@@ -155,7 +212,8 @@ Result = phone push on every new listing, cheapest first, 🔥 high-priority und
 
 ## 8. Open items / good next moves
 
-- [ ] **🔑 Prices on Action-discovered deals (the biggest gap).** The hourly Action is 403-blocked from old.reddit comment pages, so it can't recover prices — only a later local run can. Options to make it automatic: (a) run price recovery on a **local cron** (residential IP) and push `deals.json`; (b) route the Action's comment fetch through a **residential/rotating proxy**; (c) official Reddit OAuth (gated, Noel expects rejection). Until one is done, **remember to run `./run_now.sh` locally to fill in prices.**
+- [x] ~~**🔑 Prices on Action-discovered deals (the biggest gap).**~~ **RESOLVED (session 2, PR #36)** via Reddit OAuth — `oauth.reddit.com` works from Actions. **Remaining action: add the four `REDDIT_*` repo secrets to activate it in the cloud** (see §0). Until the secrets are set, the fallback still needs a local `./run_now.sh` for prices.
+- [ ] **Multi-watch price parsing (new, deferred from PR #36).** `parse_price` picks the wrong price on posts selling several watches (e.g. `1uod3c6` "Big Drop": stored $8500 vs actual $4175). Anchor on the matched watch's ref/model in the OP comment. Task chip created this session.
 - [ ] **eBay rebuild** — replace the Akamai-blocked HTML scrape with eBay's official **Browse API** (free, needs a dev key), then re-enable `ENABLE_EBAY`. Good `deliver-feature` candidate.
 - [ ] Small tidy: gitignore `.claude/launch.json` alongside the existing `.claude/settings.local.json` + `.claude/worktrees/` entries.
 - [ ] Stale merged branches: ~18 old feature branches remain locally (Noel said leave them 2026-06-29). Prune with `git branch -d` when wanted.
