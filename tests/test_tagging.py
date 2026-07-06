@@ -1,5 +1,6 @@
 # tests/test_tagging.py
 import json
+import os
 import pytest
 from pathlib import Path
 from unittest.mock import patch
@@ -130,8 +131,11 @@ def test_save_deals_appends_to_existing(tmp_path):
 def _run_backfill(tmp_path, deals, fetch_return):
     deals_file = tmp_path / "deals.json"
     deals_file.write_text(json.dumps(deals))
+    # Neutralize GITHUB_ACTIONS: backfill is skipped on runners (403), and CI itself
+    # runs on Actions — without this override these tests would no-op there.
     with patch("watch_monitor.DEALS_FILE", deals_file), \
          patch("watch_monitor.fetch_op_price", return_value=fetch_return), \
+         patch.dict(os.environ, {"GITHUB_ACTIONS": ""}), \
          patch("watch_monitor.time.sleep"):
         watch_monitor.backfill_prices()
     return json.loads(deals_file.read_text())
@@ -170,6 +174,32 @@ def test_backfill_skips_priced_and_nonreddit(tmp_path):
     assert "price_attempts" not in saved[0]
     assert saved[1]["price"] is None          # non-reddit -> untouched
     assert "price_attempts" not in saved[1]
+
+
+def test_backfill_retries_given_up_deals(tmp_path):
+    """A -1 (gave-up) deal is re-attempted — a residential run can recover what the
+    datacenter IP's 403s could not."""
+    deals = [{"id": "reddit:a", "source": "r/watchexchange", "price": -1,
+              "url": "u", "price_attempts": 5}]
+    saved = _run_backfill(tmp_path, deals, fetch_return=1750)
+    assert saved[0]["price"] == 1750
+    assert saved[0]["price_attempts"] == 6
+
+
+def test_backfill_skipped_on_github_actions(tmp_path):
+    """On a runner the comment fetch always 403s, so backfill is a no-op there
+    (prevents burning the retry budget into false -1 give-ups)."""
+    deals = [{"id": "reddit:a", "source": "r/watchexchange", "price": None, "url": "u"}]
+    deals_file = tmp_path / "deals.json"
+    deals_file.write_text(json.dumps(deals))
+    with patch("watch_monitor.DEALS_FILE", deals_file), \
+         patch("watch_monitor.fetch_op_price", return_value=1750), \
+         patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), \
+         patch("watch_monitor.time.sleep"):
+        watch_monitor.backfill_prices()
+    saved = json.loads(deals_file.read_text())
+    assert saved[0]["price"] is None          # untouched on Actions
+    assert "price_attempts" not in saved[0]
 
 
 def test_size_signals_40():
@@ -304,14 +334,10 @@ _OP_HTML_MARKDOWN_PRICE = """<div class="commentarea"><div class="comment">
 </div></div>"""
 
 
-def _fake_anthropic(reply_text):
-    """Build a stand-in `anthropic` module whose messages.create returns reply_text."""
+def _fake_cli(stdout, returncode=0, stderr=""):
+    """Build a stand-in subprocess.run that returns the given CLI output."""
     from unittest.mock import MagicMock
-    block = MagicMock(type="text", text=reply_text)
-    resp = MagicMock(content=[block])
-    module = MagicMock()
-    module.Anthropic.return_value.messages.create.return_value = resp
-    return module
+    return lambda *a, **k: MagicMock(returncode=returncode, stdout=stdout, stderr=stderr)
 
 
 def test_parse_price_misses_markdown_wrapped_price():
@@ -320,29 +346,39 @@ def test_parse_price_misses_markdown_wrapped_price():
     assert watch_monitor.parse_price(text, loose=True) is None
 
 
-def test_extract_price_llm_no_key_returns_none(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+def test_extract_price_llm_no_cli_returns_none(monkeypatch):
+    """No `claude` on PATH → returns None (best-effort contract)."""
+    monkeypatch.setattr(watch_monitor.shutil, "which", lambda _: None)
     assert watch_monitor.extract_price_llm("asking **2700** shipped") is None
 
 
 def test_extract_price_llm_skips_textless(monkeypatch):
-    """No digit in the comment → no API call, returns None."""
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    import sys
-    called = _fake_anthropic("2700")
-    monkeypatch.setitem(sys.modules, "anthropic", called)
+    """No digit in the comment → no CLI call, returns None."""
+    monkeypatch.setattr(watch_monitor.shutil, "which", lambda _: "/usr/bin/claude")
+    ran = {"called": False}
+
+    def fake_run(*a, **k):
+        ran["called"] = True
+    monkeypatch.setattr(watch_monitor.subprocess, "run", fake_run)
     assert watch_monitor.extract_price_llm("Messaging") is None
-    assert not called.Anthropic.called           # never reached the SDK
+    assert not ran["called"]                      # never shelled out to the CLI
 
 
 def test_extract_price_llm_parses_and_validates(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    import sys
-    monkeypatch.setitem(sys.modules, "anthropic", _fake_anthropic("2700"))
+    monkeypatch.setattr(watch_monitor.shutil, "which", lambda _: "/usr/bin/claude")
+    monkeypatch.setattr(watch_monitor.subprocess, "run", _fake_cli("2700\n"))
     assert watch_monitor.extract_price_llm("**2700** shipped") == 2700
     # Implausible number rejected by _to_price (must be 100..100000)
-    monkeypatch.setitem(sys.modules, "anthropic", _fake_anthropic("5"))
+    monkeypatch.setattr(watch_monitor.subprocess, "run", _fake_cli("5\n"))
     assert watch_monitor.extract_price_llm("watch for 5 bucks lol") is None
+
+
+def test_extract_price_llm_nonzero_exit_returns_none(monkeypatch):
+    """A failed CLI invocation (nonzero exit) returns None, not a crash."""
+    monkeypatch.setattr(watch_monitor.shutil, "which", lambda _: "/usr/bin/claude")
+    monkeypatch.setattr(watch_monitor.subprocess, "run",
+                        _fake_cli("", returncode=1, stderr="auth error"))
+    assert watch_monitor.extract_price_llm("**2700** shipped") is None
 
 
 def test_fetch_op_price_falls_back_to_llm(monkeypatch):

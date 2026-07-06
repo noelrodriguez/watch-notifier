@@ -12,6 +12,8 @@ Setup + scheduling instructions are in README.md.
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 import html
@@ -368,27 +370,29 @@ def run_test_push():
     sys.exit(0 if ok else 1)
 
 
-# LLM fallback model for prices the regex can't read (markdown-wrapped numbers,
-# unusual phrasing, multi-watch posts). Sonnet 4.6 balances cost and accuracy for
-# this simple extraction; override with PRICE_LLM_MODEL (e.g. claude-haiku-4-5 to
-# save more, claude-opus-4-8 for the strongest model).
-PRICE_LLM_MODEL = os.getenv("PRICE_LLM_MODEL", "claude-sonnet-4-6")
+# LLM fallback for prices the regex can't read (markdown-wrapped numbers, unusual
+# phrasing, multi-watch posts). Runs the local `claude` CLI (`claude -p`), which uses
+# the Claude Code subscription — no separate ANTHROPIC_API_KEY / pay-per-token billing.
+# --model takes a CLI alias (sonnet / opus / haiku); override with PRICE_LLM_MODEL.
+CLAUDE_CLI      = os.getenv("CLAUDE_CLI", "claude")
+PRICE_LLM_MODEL = os.getenv("PRICE_LLM_MODEL", "sonnet")
+LLM_TIMEOUT     = 60
 
 
 def extract_price_llm(comment_text, title=None):
-    """Last-resort price extraction via Claude when parse_price() can't read a comment.
+    """Last-resort price extraction via the local `claude` CLI when parse_price()
+    can't read a comment.
 
-    Only fires when ANTHROPIC_API_KEY is set and the text actually contains a digit
-    (so "Messaging"-type comments cost nothing). Best-effort: a missing key, missing
-    SDK, or any API error returns None — same contract as the regex path. The model's
-    answer is validated back through _to_price, so a hallucinated/implausible number
-    is rejected rather than trusted.
+    Uses `claude -p` (the Claude Code subscription), so it costs nothing beyond that
+    subscription — no ANTHROPIC_API_KEY. Only fires when the comment contains a digit
+    (so "Messaging"-type comments do no work) and the `claude` CLI is on PATH.
+    Best-effort: a missing CLI, timeout, or any error returns None — same contract as
+    the regex path. The answer is validated back through _to_price, so a
+    hallucinated/implausible number is rejected rather than trusted.
     """
-    if not os.getenv("ANTHROPIC_API_KEY") or not comment_text or not re.search(r"\d", comment_text):
+    if not comment_text or not re.search(r"\d", comment_text):
         return None
-    try:
-        import anthropic
-    except ImportError:
+    if not shutil.which(CLAUDE_CLI):
         return None
     ctx = f"Listing title: {title}\n\n" if title else ""
     prompt = (
@@ -398,16 +402,17 @@ def extract_price_llm(comment_text, title=None):
         f"stated.\n\nComment:\n{comment_text}"
     )
     try:
-        resp = anthropic.Anthropic().messages.create(
-            model=PRICE_LLM_MODEL,
-            max_tokens=16,
-            messages=[{"role": "user", "content": prompt}],
+        proc = subprocess.run(
+            [CLAUDE_CLI, "-p", prompt, "--model", PRICE_LLM_MODEL],
+            capture_output=True, text=True, timeout=LLM_TIMEOUT,
         )
-        out = "".join(b.text for b in resp.content if b.type == "text").strip()
     except Exception as e:
-        log(f"WARN: LLM price extraction failed: {e}")
+        log(f"WARN: claude CLI price extraction error: {e}")
         return None
-    m = re.search(r"\d[\d,]*", out)
+    if proc.returncode != 0:
+        log(f"WARN: claude CLI price extraction failed: {proc.stderr.strip()[:200]}")
+        return None
+    m = re.search(r"\d[\d,]*", proc.stdout)
     return _to_price(m.group(0)) if m else None
 
 
@@ -488,8 +493,16 @@ def backfill_prices():
     None. Without this, dedup means it's never revisited and the blank is permanent.
     Re-fetch those here, up to PRICE_BACKFILL_MAX_ATTEMPTS times; on the final miss,
     flag price = PRICE_GAVE_UP (-1) so a persistent blank is visible in the web app
-    instead of an indistinguishable null.
+    instead of an indistinguishable null. Deals already flagged -1 are re-attempted
+    too: they usually gave up only because the datacenter IP was 403'd, and a
+    residential run can read them fine.
     """
+    # old.reddit comment pages hard-403 from GitHub Actions' datacenter IP, so every
+    # attempt there fails and only burns the retry budget → false -1 give-ups. Price
+    # recovery is residential-only; skip backfill on Actions and let a local run do it.
+    # ponytail: GITHUB_ACTIONS is the canonical "am I on a runner" env signal.
+    if os.getenv("GITHUB_ACTIONS"):
+        return
     if not DEALS_FILE.exists():
         return
     try:
@@ -499,7 +512,9 @@ def backfill_prices():
         return
     changed = False
     for d in deals:
-        if d.get("source") != "r/watchexchange" or d.get("price") is not None:
+        cur = d.get("price")
+        # Retry price-less (None) deals and ones previously flagged -1 (see docstring).
+        if d.get("source") != "r/watchexchange" or (cur is not None and cur != PRICE_GAVE_UP):
             continue
         attempts = d.get("price_attempts", 0) + 1
         d["price_attempts"] = attempts
