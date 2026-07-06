@@ -894,5 +894,21 @@
     "strap": null,
     "is_hot": true,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1upbtvd",
+    "title": "[WTS] Tag Heuer Carrera Skeleton Chronograph CAR2A1W",
+    "price": 2499,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1upbtvd/wts_tag_heuer_carrera_skeleton_chronograph_car2a1w/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-06T22:15:12.960448+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
   }
 ]
