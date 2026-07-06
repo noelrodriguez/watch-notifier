@@ -20,7 +20,7 @@ GitHub Actions (hourly cron)
 
 ## Setup
 
-Full step-by-step (secrets, permissions, testing) is in **[GITHUB_ACTIONS_SETUP.md](./GITHUB_ACTIONS_SETUP.md)**. Short version:
+Full step-by-step (secrets, permissions, testing) is in **[docs/GITHUB_ACTIONS_SETUP.md](./docs/GITHUB_ACTIONS_SETUP.md)**. Short version:
 
 1. Add a repo secret `NTFY_TOPIC` (Settings → Secrets and variables → Actions).
 2. Set **Settings → Actions → General → Workflow permissions → Read and write**.
@@ -35,9 +35,9 @@ Full step-by-step (secrets, permissions, testing) is in **[GITHUB_ACTIONS_SETUP.
 | `requirements.txt` | Python deps (`requests`, `beautifulsoup4`) |
 | `.github/workflows/monitor.yml` | Hourly schedule + manual test button + state commit |
 | `data/monitor_state.json` | Auto-created dedup memory (tracked in git on purpose) |
-| `GITHUB_ACTIONS_SETUP.md` | Detailed setup + troubleshooting |
-| `HANDOFF_SUMMARY.md` | Project context / decision log |
-| `requested_watches.md` | Tracked watch preferences |
+| `docs/GITHUB_ACTIONS_SETUP.md` | Detailed setup + troubleshooting |
+| `docs/HANDOFF_SUMMARY.md` | Project context / decision log |
+| `docs/requested_watches.md` | Tracked watch preferences |
 
 ## Tuning
 
@@ -50,4 +50,4 @@ is `MAX_PUSH_PER_RUN`.
 
 - GitHub cron is **UTC** and runs can lag **10–30 min** under load (fine for hourly).
 - **Datacenter IPs get bot-blocked more than a home connection** — the RSS discovery feed works on Actions, but old.reddit comment pages (used to recover a seller's asking price) 403 from GitHub's IPs, so prices fill in only on a later local run. Check a few run logs.
-- Local-run mode still works too: set `NTFY_TOPIC`, then `python watch_monitor.py` (see `GITHUB_ACTIONS_SETUP.md`).
+- Local-run mode still works too: set `NTFY_TOPIC`, then `python watch_monitor.py` (see `docs/GITHUB_ACTIONS_SETUP.md`).
