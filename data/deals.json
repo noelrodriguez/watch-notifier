@@ -942,5 +942,37 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uquh5r",
+    "title": "[WTS] Tag Heuer Carrera 'Glassbox' Chronograph CBS2210.BA0048 $4,700",
+    "price": 4700,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uquh5r/wts_tag_heuer_carrera_glassbox_chronograph/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-08T16:41:25.823807+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uquadi",
+    "title": "[WTS] TAG Heuer Carrera Chronograph 44mm Steel Blue Dial CBN2A1A Full Set",
+    "price": 7300,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uquadi/wts_tag_heuer_carrera_chronograph_44mm_steel_blue/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-08T16:41:25.823966+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
