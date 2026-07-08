@@ -910,5 +910,37 @@
     "strap": null,
     "is_hot": true,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uqfxnn",
+    "title": "[WTS] 2022 Tudor Black Bay Pro - $2,899",
+    "price": 2899,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uqfxnn/wts_2022_tudor_black_bay_pro_2899/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-08T02:53:51.871921+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uqegk5",
+    "title": "[WTS] For Anyone Who Wants a Polar Explorer II but Also Groceries This Month \u2014 2026 Tudor Black Bay Pro Opaline",
+    "price": 3999,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uqegk5/wts_for_anyone_who_wants_a_polar_explorer_ii_but/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-08T02:53:51.872003+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
