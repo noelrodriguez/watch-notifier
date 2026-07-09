@@ -101,6 +101,37 @@ def load_registry():
         return []
 
 
+def _match_entry(title, registry):
+    """Return (entry, matched_refs) for the first registry watch this title matches,
+    or (None, []). Shared by tag_deal (enrichment) and price recovery (anchoring)."""
+    title_lower = title.lower()
+    for entry in registry:
+        matched_refs = [r for r in entry.get("refs", []) if r["ref"].lower() in title_lower]
+        term_hit = any(term in title_lower for term in entry.get("search_terms", []))
+        # Also accept the same relevance gate that let the listing in: search_terms
+        # are contiguous substrings, but real titles read "Master Collection ...
+        # Moonphase", so match on relevance_required_all (all tokens present) too.
+        group_hit = is_relevant(title, entry.get("relevance_required_all", []))
+        if term_hit or matched_refs or group_hit:
+            return entry, matched_refs
+    return None, []
+
+
+def price_anchor_groups(entry):
+    """Token groups that identify a watch inside a multi-watch OP comment, so price
+    recovery can anchor on the matched watch instead of grabbing the first price.
+
+    Each group is AND-matched (all tokens present) via is_relevant; any group hitting a
+    comment segment marks it as that watch's segment. Refs are the strongest anchor.
+    """
+    if not entry:
+        return []
+    groups = [[r["ref"].lower()] for r in entry.get("refs", []) if r.get("ref")]
+    groups += [[t.lower() for t in g] for g in entry.get("relevance_required_all", []) if g]
+    groups += [t.lower().split() for t in entry.get("search_terms", []) if t]
+    return groups
+
+
 def tag_deal(item, registry):
     """Enrich a listing dict with brand/model/ref/dial/strap/is_hot from the registry."""
     item = dict(item)
@@ -115,30 +146,23 @@ def tag_deal(item, registry):
     item["preferred_signals"] = []
 
     title_lower = item["title"].lower()
-    for entry in registry:
-        matched_refs = [r for r in entry.get("refs", []) if r["ref"].lower() in title_lower]
-        term_hit = any(term in title_lower for term in entry.get("search_terms", []))
-        # Also accept the same relevance gate that let the listing in: search_terms
-        # are contiguous substrings, but real titles read "Master Collection ...
-        # Moonphase", so match on relevance_required_all (all tokens present) too.
-        group_hit = is_relevant(item["title"], entry.get("relevance_required_all", []))
-        if term_hit or matched_refs or group_hit:
-            item["brand"] = entry.get("brand")
-            item["model"] = entry.get("model")
-            item["size_mm"] = entry.get("size_mm")
+    entry, matched_refs = _match_entry(item["title"], registry)
+    if entry:
+        item["brand"] = entry.get("brand")
+        item["model"] = entry.get("model")
+        item["size_mm"] = entry.get("size_mm")
 
-            item["preferred_signals"] = [
-                s for s in size_signals(entry.get("size_mm")) if s in title_lower
-            ]
+        item["preferred_signals"] = [
+            s for s in size_signals(entry.get("size_mm")) if s in title_lower
+        ]
 
-            item["ref_matches"] = [r["ref"] for r in matched_refs]
-            if matched_refs:
-                item["dial"] = matched_refs[0].get("dial")
-                item["strap"] = matched_refs[0].get("strap")
+        item["ref_matches"] = [r["ref"] for r in matched_refs]
+        if matched_refs:
+            item["dial"] = matched_refs[0].get("dial")
+            item["strap"] = matched_refs[0].get("strap")
 
-            ceiling = entry.get("price_ceiling") or float("inf")
-            item["is_hot"] = item.get("price") is not None and item["price"] <= ceiling
-            break
+        ceiling = entry.get("price_ceiling") or float("inf")
+        item["is_hot"] = item.get("price") is not None and item["price"] <= ceiling
 
     return item
 
@@ -480,7 +504,7 @@ PRICE_LLM_MODEL = os.getenv("PRICE_LLM_MODEL", "sonnet")
 LLM_TIMEOUT     = 60
 
 
-def extract_price_llm(comment_text, title=None):
+def extract_price_llm(comment_text, title=None, model=None):
     """Last-resort price extraction via the local `claude` CLI when parse_price()
     can't read a comment.
 
@@ -496,9 +520,10 @@ def extract_price_llm(comment_text, title=None):
     if not shutil.which(CLAUDE_CLI):
         return None
     ctx = f"Listing title: {title}\n\n" if title else ""
+    target = f"the {model}" if model else "the watch being sold"
     prompt = (
         f"{ctx}A seller posted the comment below on r/watchexchange. Extract the "
-        f"seller's asking price in USD for the watch being sold. Reply with ONLY the "
+        f"seller's asking price in USD for {target}. Reply with ONLY the "
         f"whole-dollar integer (no $, no commas), or the word NONE if no price is "
         f"stated.\n\nComment:\n{comment_text}"
     )
@@ -517,28 +542,67 @@ def extract_price_llm(comment_text, title=None):
     return _to_price(m.group(0)) if m else None
 
 
-def fetch_op_price(post_url, title=None):
+def fetch_op_price(post_url, title=None, watch=None):
     """Best-effort asking price from the OP's comment on a thread, or None.
 
     Uses the OAuth comment API when Reddit creds are configured — which works from
     GitHub Actions' datacenter IP; otherwise old.reddit HTML, which 403s from
     datacenter IPs (so recovery is residential-only without creds). Either way a
     miss just leaves the price blank; the listing still links through.
+
+    `watch` is the matched registry entry (or None); when given, price recovery
+    anchors on that watch's ref/model so a multi-watch post yields the right price.
     """
     if not post_url:
         return None
     token = reddit_token()
     if token:
-        return _op_price_oauth(post_url, token, title)
-    return _op_price_html(post_url, title)
+        return _op_price_oauth(post_url, token, title, watch)
+    return _op_price_html(post_url, title, watch)
 
 
-def _op_price_oauth(post_url, token, title=None):
+# Split an OP comment into per-watch segments for anchored price matching: real line
+# breaks plus common inline separators sellers use to list several watches at once.
+_SEGMENT_SPLIT = re.compile(r"[\n|•·;]+")
+
+
+def _pick_op_price(op_comments, watch=None, title=None):
+    """Choose the asking price from the OP's comment(s).
+
+    On a multi-watch post the OP lists several watches, each with its own price, so the
+    first price is often the wrong one. When we know which watch matched (`watch`), first
+    look for a price on a comment segment that names that watch (its ref/model tokens)
+    and return that. If nothing anchors, fall back to the original behavior: the first
+    price in any OP comment, then the LLM on the longest digit-bearing comment.
+    ponytail: a segment is a line / inline-separator split — a single-line list with no
+    separators still falls through to first-price. Add smarter segmentation only if real
+    posts need it.
+    """
+    anchors = price_anchor_groups(watch)
+    if anchors:
+        for body in op_comments:
+            for seg in _SEGMENT_SPLIT.split(body):
+                if is_relevant(seg, anchors):
+                    price = parse_price(seg, loose=True)
+                    if price is not None:
+                        return price
+    best = ""  # longest digit-bearing OP comment, kept for the LLM fallback
+    for body in op_comments:
+        price = parse_price(body, loose=True)
+        if price is not None:
+            return price
+        if re.search(r"\d", body) and len(body) > len(best):
+            best = body
+    if best:
+        return extract_price_llm(best, title, watch.get("model") if watch else None)
+    return None
+
+
+def _op_price_oauth(post_url, token, title=None, watch=None):
     """Recover the OP price via oauth.reddit.com/comments/{id} (authenticated JSON).
 
-    The API flags the seller's comments with is_submitter, so we scan those, trying
-    the cheap regex first and falling back to extract_price_llm on the longest
-    digit-bearing OP comment the regex can't read — same policy as the HTML path.
+    The API flags the seller's comments with is_submitter; we collect those bodies and
+    hand them to _pick_op_price (anchored regex, then LLM fallback).
     """
     m = re.search(r"/comments/([a-z0-9]+)", post_url)
     if not m:
@@ -565,28 +629,17 @@ def _op_price_oauth(post_url, token, title=None):
     except Exception as e:
         log(f"WARN: OAuth OP-price error for {post_url}: {e}")
         return None
-    best = ""  # longest digit-bearing OP comment, kept for the LLM fallback
-    for c in comments:
-        cd = c.get("data", {})
-        if cd.get("is_submitter"):
-            body = cd.get("body", "") or ""
-            price = parse_price(body, loose=True)
-            if price is not None:
-                return price
-            if re.search(r"\d", body) and len(body) > len(best):
-                best = body
-    if best:
-        return extract_price_llm(best, title)
-    return None
+    op_bodies = [c.get("data", {}).get("body") or ""
+                 for c in comments if c.get("data", {}).get("is_submitter")]
+    return _pick_op_price(op_bodies, watch, title)
 
 
-def _op_price_html(post_url, title=None):
+def _op_price_html(post_url, title=None, watch=None):
     """Recover the OP price by scraping old.reddit HTML (anonymous, no creds).
 
     old.reddit server-renders the full comment tree and tags OP comments with the
-    'submitter' class. The cheap regex (parse_price) is tried first on every OP
-    comment; only if it finds nothing do we fall back to extract_price_llm on the
-    most likely OP comment (e.g. markdown-wrapped "**2700**", odd phrasing).
+    'submitter' class. We collect the OP comment bodies (newline-joined so multi-watch
+    lists stay per-line) and hand them to _pick_op_price (anchored regex, then LLM).
     403s from datacenter IPs, so this path is residential-only.
     """
     if not post_url:
@@ -609,35 +662,31 @@ def _op_price_html(post_url, title=None):
             log(f"WARN: OP-price fetch failed for {post_url}: {describe_response(r)}")
             return None
         soup = BeautifulSoup(r.text, "html.parser")
-        best = ""  # longest digit-bearing OP comment, kept for the LLM fallback
+        op_bodies = []
         for c in soup.select(".commentarea div.comment"):
             if c.select_one("a.author.submitter"):           # comment authored by the OP
                 body = c.select_one(".entry .usertext-body")
-                if not body:
-                    continue
-                text = body.get_text(" ", strip=True)
-                price = parse_price(text, loose=True)
-                if price is not None:
-                    return price
-                if re.search(r"\d", text) and len(text) > len(best):
-                    best = text
-        if best:                                             # regex struck out — ask Claude
-            return extract_price_llm(best, title)
+                if body:
+                    op_bodies.append(body.get_text("\n", strip=True))
+        return _pick_op_price(op_bodies, watch, title)
     except Exception as e:
         log(f"WARN: OP-price fetch error for {post_url}: {e}")
     return None
 
 
-def enrich_reddit_prices(items):
+def enrich_reddit_prices(items, registry=None):
     """Fill in missing prices for Reddit listings from the OP's price comment.
 
     Runs only for price-less r/watchexchange items (the minority), one extra
     old.reddit fetch each with a politeness delay. Best-effort: a miss leaves the
-    price None and the listing still links through.
+    price None and the listing still links through. The registry (when given) lets
+    price recovery anchor on the matched watch for multi-watch posts.
     """
+    registry = registry or []
     for it in items:
         if it.get("price") is None and it.get("source") == "r/watchexchange":
-            it["price"] = fetch_op_price(it["url"], it.get("title"))
+            watch, _ = _match_entry(it.get("title", ""), registry)
+            it["price"] = fetch_op_price(it["url"], it.get("title"), watch)
             time.sleep(1)
 
 
@@ -670,6 +719,7 @@ def backfill_prices():
     except Exception as e:
         log(f"WARN: could not read deals file for backfill ({e}).")
         return
+    registry = load_registry()
     changed = False
     for d in deals:
         cur = d.get("price")
@@ -678,7 +728,8 @@ def backfill_prices():
             continue
         attempts = d.get("price_attempts", 0) + 1
         d["price_attempts"] = attempts
-        price = fetch_op_price(d.get("url"), d.get("title"))
+        watch, _ = _match_entry(d.get("title", ""), registry)
+        price = fetch_op_price(d.get("url"), d.get("title"), watch)
         if price is not None:
             d["price"] = price
             log(f"  backfilled price ${price} for {d['id']} (attempt {attempts})")
@@ -732,7 +783,7 @@ def main():
 
     # Recover missing prices from the OP's price comment (new Reddit items only),
     # then sort cheapest-first so recovered prices affect ordering and the push cap.
-    enrich_reddit_prices(new_items)
+    enrich_reddit_prices(new_items, registry)
     new_items.sort(key=lambda x: (x.get("price") is None, x.get("price") or 0))
 
     tagged_new = [tag_deal(it, registry) for it in new_items]
