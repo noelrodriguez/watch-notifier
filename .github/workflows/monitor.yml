@@ -3,9 +3,12 @@ name: Watch Tracker Monitor
 # Runs the Longines moonphase monitor on a schedule, plus a manual button.
 on:
   schedule:
-    # Hourly, on the hour. NOTE: GitHub cron is UTC and runs can be delayed
-    # 10-30 min under load. Fine for an hourly deal check.
-    - cron: "0 * * * *"
+    # Every 5 minutes (the shortest interval GitHub allows). NOTE: GitHub cron is
+    # UTC and scheduled runs are BEST-EFFORT — under load they're delayed or skipped
+    # entirely, so real cadence is often slower than 5 min. Reddit OAuth (REDDIT_*
+    # secrets) makes price recovery work from the runner, which is what makes a tight
+    # cadence worthwhile. Public repo = unlimited free Actions minutes.
+    - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       test_push:
