@@ -990,5 +990,39 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1us81vc",
+    "title": "[WTS] Tudor Black Bay Pro 39 Full Set",
+    "price": 2900,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1us81vc/wts_tudor_black_bay_pro_39_full_set/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-10T01:14:40.462939+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1us75sf",
+    "title": "[WTS] PRICE DROP 2025 TAG Heuer Carrera Glassbox Plum Chronograph 39mm CBS2219.FC6607 - $4,859 shipped express worldwide",
+    "price": 4859,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1us75sf/wts_price_drop_2025_tag_heuer_carrera_glassbox/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-10T01:14:40.463005+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": [
+      "39mm"
+    ]
   }
 ]
