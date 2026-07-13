@@ -1088,5 +1088,23 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uuwxti",
+    "title": "[WTS] TAG Heuer Carrera Automatic Chronograph 39mm - Ref. CV2110",
+    "price": 2050,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uuwxti/wts_tag_heuer_carrera_automatic_chronograph_39mm/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-13T03:53:53.285554+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": [
+      "39mm"
+    ]
   }
 ]
