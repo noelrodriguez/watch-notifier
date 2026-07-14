@@ -1122,5 +1122,21 @@
     "strap": null,
     "is_hot": true,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uwop78",
+    "title": "[WTS] HUGE DISCOUNT - Longines Master Moonphase 42mm - Minty Fresh",
+    "price": 1550,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uwop78/wts_huge_discount_longines_master_moonphase_42mm/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-14T23:28:01.171868+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
   }
 ]
