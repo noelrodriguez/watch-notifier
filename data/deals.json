@@ -1188,5 +1188,21 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uxut1z",
+    "title": "[WTS] Tudor Black Bay Pro, Excellent condition, Extras, Full Set, $4200",
+    "price": 4200,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uxut1z/wts_tudor_black_bay_pro_excellent_condition/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-16T06:35:57.208124+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
