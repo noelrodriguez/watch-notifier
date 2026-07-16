@@ -1204,5 +1204,21 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": []
+  },
+  {
+    "id": "reddit:1uydupg",
+    "title": "[WTS] Tudor Black Bay Pro black on bracelet, full kit $2800",
+    "price": 2800,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1uydupg/wts_tudor_black_bay_pro_black_on_bracelet_full/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-16T20:35:30.788334+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
   }
 ]
