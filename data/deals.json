@@ -1338,6 +1338,24 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 20
+    "price_attempts": 21
+  },
+  {
+    "id": "reddit:1v17xrs",
+    "title": "[WTS] Tag Heuer Carrera Chronograph \u201cGlassbox\u201d 39mm full set in warranty - CBS2212.FC6535 - $4700",
+    "price": 4700,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v17xrs/wts_tag_heuer_carrera_chronograph_glassbox_39mm/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-20T04:42:15.498182+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": [
+      "39mm"
+    ]
   }
 ]
