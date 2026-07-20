@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 23
+    "price_attempts": 24
   },
   {
     "id": "reddit:1v17xrs",
@@ -1357,5 +1357,21 @@
     "preferred_signals": [
       "39mm"
     ]
+  },
+  {
+    "id": "reddit:1v1j6jv",
+    "title": "[WTS] Tudor Black Bay Pro Opaline New 7/2026, $4200",
+    "price": 4200,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v1j6jv/wts_tudor_black_bay_pro_opaline_new_72026_4200/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-20T12:34:48.889915+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
