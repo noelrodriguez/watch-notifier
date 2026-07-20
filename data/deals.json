@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 27
+    "price_attempts": 28
   },
   {
     "id": "reddit:1v17xrs",
@@ -1381,6 +1381,22 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1v1tcar/wts_tudor_pelagos_39_tudor_black_bay_36/",
     "source": "r/watchexchange",
     "date_seen": "2026-07-20T18:22:59.653657+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1v1uwpb",
+    "title": "[WTS] Tudor Black Bay Pro, Excellent condition, Full Set, $3800",
+    "price": 3800,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v1uwpb/wts_tudor_black_bay_pro_excellent_condition_full/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-20T20:00:57.696308+00:00",
     "brand": "Tudor",
     "model": "Black Bay Pro",
     "size_mm": 39,
