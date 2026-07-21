@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 40
+    "price_attempts": 41
   },
   {
     "id": "reddit:1v17xrs",
@@ -1447,6 +1447,38 @@
     "date_seen": "2026-07-21T17:25:45.298814+00:00",
     "brand": "Tudor",
     "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1v2qjdl",
+    "title": "[WTS] FINAL REDUCTION! - Longines Master Moonphase 42mm",
+    "price": 1500,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v2qjdl/wts_final_reduction_longines_master_moonphase_42mm/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-21T18:48:16.139844+00:00",
+    "brand": "Longines",
+    "model": "Master Collection Chrono Moonphase",
+    "size_mm": 40,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1v2pebd",
+    "title": "[WTS] Tag Heuer Carrera Skeleton Chronograph CAR2A1W",
+    "price": 2499,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v2pebd/wts_tag_heuer_carrera_skeleton_chronograph_car2a1w/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-21T18:48:16.139903+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
     "size_mm": 39,
     "ref_matches": [],
     "dial": null,
