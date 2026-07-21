@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 31
+    "price_attempts": 32
   },
   {
     "id": "reddit:1v17xrs",
@@ -1399,6 +1399,22 @@
     "date_seen": "2026-07-20T20:00:57.696308+00:00",
     "brand": "Tudor",
     "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1v21zpk",
+    "title": "[WTS] Tag Heuer Carrera Chronograph 44mm (Steel & 18K rose gold)",
+    "price": 5199,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v21zpk/wts_tag_heuer_carrera_chronograph_44mm_steel_18k/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-21T00:12:36.439025+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
     "size_mm": 39,
     "ref_matches": [],
     "dial": null,
