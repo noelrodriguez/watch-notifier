@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 39
+    "price_attempts": 40
   },
   {
     "id": "reddit:1v17xrs",
@@ -1429,6 +1429,22 @@
     "url": "https://www.reddit.com/r/Watchexchange/comments/1v2m08j/wts_tudor_black_bay_pro_black_dial_bracelet_full/",
     "source": "r/watchexchange",
     "date_seen": "2026-07-21T15:59:59.449996+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1v2oe5t",
+    "title": "[WTS] Tudor Black Bay Pro, OEM rubber strap with clasp,  extra premium rubber strap, $350",
+    "price": 350,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v2oe5t/wts_tudor_black_bay_pro_oem_rubber_strap_with/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-21T17:25:45.298814+00:00",
     "brand": "Tudor",
     "model": "Black Bay Pro",
     "size_mm": 39,
