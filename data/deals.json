@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 57
+    "price_attempts": 58
   },
   {
     "id": "reddit:1v17xrs",
@@ -1500,6 +1500,22 @@
     "dial": null,
     "strap": null,
     "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1v3t63y",
+    "title": "[WTS] TUDOR BLACK BAY PRO OPALINE DIAL 2026 BRAND NEW/UNWORN COMPLETE SET $4299+SHIPPING",
+    "price": 4299,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v3t63y/wts_tudor_black_bay_pro_opaline_dial_2026_brand/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-22T22:03:54.788714+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
     "preferred_signals": []
   }
 ]
