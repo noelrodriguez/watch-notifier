@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 52
+    "price_attempts": 53
   },
   {
     "id": "reddit:1v17xrs",
@@ -1479,6 +1479,22 @@
     "date_seen": "2026-07-21T18:48:16.139903+00:00",
     "brand": "Tag Heuer",
     "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": []
+  },
+  {
+    "id": "reddit:1v3iuld",
+    "title": "[WTS] Tudor Black Bay Pro full kit 2022, $2850",
+    "price": 2850,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v3iuld/wts_tudor_black_bay_pro_full_kit_2022_2850/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-22T16:00:10.800442+00:00",
+    "brand": "Tudor",
+    "model": "Black Bay Pro",
     "size_mm": 39,
     "ref_matches": [],
     "dial": null,
