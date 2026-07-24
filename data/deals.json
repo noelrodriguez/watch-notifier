@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 73
+    "price_attempts": 74
   },
   {
     "id": "reddit:1v17xrs",
@@ -1534,6 +1534,24 @@
     "is_hot": true,
     "preferred_signals": [
       "40mm"
+    ]
+  },
+  {
+    "id": "reddit:1v4u5se",
+    "title": "[WTS] FINAL PRICE DROP 2025 TAG Heuer Carrera Glassbox Plum Chronograph 39mm CBS2219.FC6607 - $4,394 shipped express worldwide",
+    "price": 4394,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v4u5se/wts_final_price_drop_2025_tag_heuer_carrera/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-24T00:11:37.489504+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": true,
+    "preferred_signals": [
+      "39mm"
     ]
   }
 ]
