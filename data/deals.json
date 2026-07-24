@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 82
+    "price_attempts": 83
   },
   {
     "id": "reddit:1v17xrs",
@@ -1553,5 +1553,21 @@
     "preferred_signals": [
       "39mm"
     ]
+  },
+  {
+    "id": "reddit:1v5hk1d",
+    "title": "[WTS] Tag Heuer Carrera Chronograph \"Glassbox\" Black Dial w/ Extra Rubber Strap Ref: CBS2114.BA0053 - $5600",
+    "price": 5600,
+    "url": "https://www.reddit.com/r/Watchexchange/comments/1v5hk1d/wts_tag_heuer_carrera_chronograph_glassbox_black/",
+    "source": "r/watchexchange",
+    "date_seen": "2026-07-24T18:45:00.773552+00:00",
+    "brand": "Tag Heuer",
+    "model": "Carrera Chrono",
+    "size_mm": 39,
+    "ref_matches": [],
+    "dial": null,
+    "strap": null,
+    "is_hot": false,
+    "preferred_signals": []
   }
 ]
