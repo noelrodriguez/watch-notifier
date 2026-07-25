@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 102
+    "price_attempts": 103
   },
   {
     "id": "reddit:1v17xrs",
@@ -1585,6 +1585,6 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 1
+    "price_attempts": 2
   }
 ]
