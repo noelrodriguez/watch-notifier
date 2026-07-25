@@ -1338,7 +1338,7 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 103
+    "price_attempts": 104
   },
   {
     "id": "reddit:1v17xrs",
@@ -1573,7 +1573,7 @@
   {
     "id": "reddit:1v6jyha",
     "title": "[WTS/WTT] Tag Heuer Carrera Chronograph Openworked / Skeleton Dial Full Set!!",
-    "price": null,
+    "price": 3484,
     "url": "https://www.reddit.com/r/Watchexchange/comments/1v6jyha/wtswtt_tag_heuer_carrera_chronograph_openworked/",
     "source": "r/watchexchange",
     "date_seen": "2026-07-25T21:25:43.737385+00:00",
@@ -1585,6 +1585,6 @@
     "strap": null,
     "is_hot": false,
     "preferred_signals": [],
-    "price_attempts": 2
+    "price_attempts": 3
   }
 ]
