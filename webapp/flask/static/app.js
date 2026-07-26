@@ -8,25 +8,46 @@ let sortState = { column: 'date_seen', dir: 'desc' };
 /* ── Column visibility ── */
 const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', 'date_seen'];
 const LS_COL_KEY = 'deals-hidden-cols';
+/* Mobile keeps its own column prefs so shrinking the phone view doesn't clobber the
+   desktop choice. With nothing stored, mobile defaults to the essential set
+   (hot/price/brand/model/source visible), hiding the rest — still reachable via Columns. */
+const LS_COL_KEY_MOBILE = 'deals-hidden-cols-mobile';
+const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'date_seen'];
+const mobileMQ = (typeof matchMedia !== 'undefined')
+  ? matchMedia('(max-width: 768px)')
+  : { matches: false, addEventListener() {} };
 
-function loadHiddenCols() {
+function activeColKey() { return mobileMQ.matches ? LS_COL_KEY_MOBILE : LS_COL_KEY; }
+
+/* Pure: turn a stored string (or null = nothing stored) into the hidden-column Set.
+   null on the mobile key seeds the essential-only default; null on desktop = show all. */
+function loadHiddenCols(raw, key) {
+  if (raw == null) {
+    return key === LS_COL_KEY_MOBILE ? new Set(MOBILE_DEFAULT_HIDDEN) : new Set();
+  }
   try {
-    const raw = (typeof localStorage !== 'undefined') && localStorage.getItem(LS_COL_KEY);
-    if (!raw) return new Set();
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return new Set();
     return new Set(parsed.filter((k) => COL_KEYS.includes(k)));
   } catch { return new Set(); }
 }
 
+function readHiddenCols() {
+  const key = activeColKey();
+  try {
+    const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem(key) : null;
+    return loadHiddenCols(raw, key);
+  } catch { return loadHiddenCols(null, key); }
+}
+
 function saveHiddenCols(hidden) {
   try {
     (typeof localStorage !== 'undefined') &&
-      localStorage.setItem(LS_COL_KEY, JSON.stringify([...hidden]));
+      localStorage.setItem(activeColKey(), JSON.stringify([...hidden]));
   } catch { /* storage unavailable */ }
 }
 
-let hiddenCols = loadHiddenCols();
+let hiddenCols = readHiddenCols();
 
 function applyColVisibility() {
   hiddenCols.forEach((key) => {
@@ -366,7 +387,19 @@ function setupListeners() {
     });
     sortState = { column: 'date_seen', dir: 'desc' };  // back to default (newest first)
     updateSortIndicators();
+    document.body.classList.remove('filter-open');  // close the mobile drawer
     render();
+  });
+}
+
+/* Sync the popover checkboxes to the current hiddenCols set. */
+function syncColPopover() {
+  document.querySelectorAll('#col-popover [data-col]').forEach((box) => {
+    const key = box.dataset.col;
+    const cb  = box.querySelector('input');
+    const vis = !hiddenCols.has(key);
+    cb.checked = vis;
+    box.classList.toggle('checked', vis);
   });
 }
 
@@ -375,13 +408,14 @@ function setupColToggle() {
   const btn = document.getElementById('col-toggle-btn');
   const popover = document.getElementById('col-popover');
 
-  // Sync checkbox state from loaded hiddenCols
-  popover.querySelectorAll('[data-col]').forEach((box) => {
-    const key = box.dataset.col;
-    const cb  = box.querySelector('input');
-    const vis = !hiddenCols.has(key);
-    cb.checked = vis;
-    box.classList.toggle('checked', vis);
+  syncColPopover();
+
+  // Crossing the mobile breakpoint swaps which stored column prefs are live.
+  mobileMQ.addEventListener('change', () => {
+    hiddenCols = readHiddenCols();
+    syncColPopover();
+    applyColVisibility();
+    document.body.classList.remove('filter-open');  // drawer is mobile-only
   });
 
   btn.addEventListener('click', (e) => {
@@ -417,11 +451,21 @@ function setupColToggle() {
   });
 }
 
+/* ── Mobile filter drawer ── */
+function setupFilterDrawer() {
+  const shut = () => document.body.classList.remove('filter-open');
+  document.getElementById('filter-toggle')
+    .addEventListener('click', () => document.body.classList.add('filter-open'));
+  document.getElementById('filter-close').addEventListener('click', shut);
+  document.getElementById('filter-scrim').addEventListener('click', shut);
+}
+
 /* ── Boot ── */
 document.addEventListener('DOMContentLoaded', () => {
   setupListeners();
   setupSortHeaders();
   setupColToggle();
+  setupFilterDrawer();
   setupWatchesListeners();
   fetchData();
 });

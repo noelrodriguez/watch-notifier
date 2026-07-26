@@ -350,3 +350,88 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
 .deal-del-btn { background: transparent; color: #666; border: none;
   padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
 .deal-del-btn:hover { color: #cc5f57; }  /* shared destructive hue (see watch delete) */
+
+/* ── Mobile drawer controls: hidden on desktop, revealed in the media query ── */
+.filter-toggle, .filter-close, .filter-scrim { display: none; }
+
+/* ══ Mobile (≤768px) — portrait phone. Desktop rules above are untouched. ══ */
+@media (max-width: 768px) {
+
+  /* Header: drop the sync meta to make room; keep horizontal padding tight. */
+  .app-header { padding: 14px 16px; }
+  .app-meta { display: none; }
+
+  /* Filter bar becomes a slide-in drawer over the table; the main pane takes the
+     full width once the sidebar leaves the flex flow. */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 82vw; max-width: 300px;
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    border-right: 1px solid #1e1e2e;
+  }
+  body.filter-open .sidebar { transform: translateX(0); }
+
+  .filter-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);  /* same scrim as the modal */
+    z-index: 55;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  body.filter-open .filter-scrim { opacity: 1; pointer-events: auto; }
+
+  /* The two mobile-only affordances. */
+  .filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid #c9a84c44;
+    color: #c9a84c;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    min-height: 44px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .filter-close {
+    display: block;
+    width: 44px;
+    min-height: 44px;
+    margin: -8px -8px 4px auto;  /* pull to the drawer's top-right corner */
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  /* Toolbar: give the table more room; the desktop sort hint is noise on touch. */
+  .toolbar { padding: 10px 12px; gap: 10px; }
+  .sort-hint { display: none; }
+
+  /* Table: trim side padding, tighten cell density and the model column so the
+     essential set (price/brand/model/source) fits without sideways scroll; keep
+     overflow-x as a safety net for the widest edge cases. */
+  .table-wrap { padding: 0 10px 40px; overflow-x: auto; }
+  thead th, td { padding-right: 8px; }
+  .model-cell { max-width: 100px; }
+
+  /* Watches view + modal: stack and fit the narrow screen. */
+  #watches-view { padding: 16px 12px; }
+  .watch-row { flex-wrap: wrap; gap: 6px; }
+  .watch-actions { margin-left: auto; }
+
+  .modal-card { width: calc(100vw - 24px); max-width: 460px; padding: 18px; }
+  .ref-row { flex-wrap: wrap; }
+  .ref-row input { flex: 1 1 30%; min-width: 92px; }
+}

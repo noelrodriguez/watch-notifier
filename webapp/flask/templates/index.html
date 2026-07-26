@@ -20,7 +20,11 @@
 <section id="deals-view">
 <div class="layout">
 
+  <div id="filter-scrim" class="filter-scrim"></div>
+
   <aside class="sidebar">
+
+    <button id="filter-close" class="filter-close" type="button" aria-label="Close filters">✕</button>
 
     <div class="filter-section">
       <span class="filter-label">Hot Deals</span>
@@ -98,6 +102,7 @@
   <main class="main">
 
     <div class="toolbar">
+      <button id="filter-toggle" class="filter-toggle" type="button" aria-label="Show filters">☰ Filters</button>
       <div class="result-count" id="result-count">Loading…</div>
       <div class="toolbar-right">
         <div class="col-toggle-wrap">
