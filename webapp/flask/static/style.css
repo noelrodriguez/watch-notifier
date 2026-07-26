@@ -282,11 +282,6 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
   transition: border-color 0.15s, color 0.15s; }
 .watch-actions button:hover { border-color: #c9a84c44; color: #c9a84c; }
 .watch-actions button[data-del]:hover { border-color: #aa333366; color: #cc5f57; }
-.push-banner { display: flex; justify-content: space-between; align-items: center;
-  background: #2a2410; border: 1px solid #c9a84c; color: #e7d6a0;
-  padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; }
-#push-btn { background: #c9a84c; color: #07070d; border: none; padding: 6px 12px;
-  border-radius: 4px; cursor: pointer; font-weight: 600; }
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7);
   align-items: center; justify-content: center; z-index: 50; }
 .modal-card { background: #0d0d16; border: 1px solid #222; padding: 22px;

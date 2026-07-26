@@ -439,7 +439,6 @@ async function fetchWatches() {
     return;
   }
   renderWatches();
-  refreshStatus();
 }
 
 function renderWatches() {
@@ -557,35 +556,6 @@ async function deleteDeal(encodedId) {
   }
   allDeals = allDeals.filter((d) => encodeURIComponent(d.id || '') !== encodedId);
   render();
-  refreshStatus();
-}
-
-/* ── Push banner ── */
-async function refreshStatus() {
-  let s;
-  try { s = await (await fetch('/api/status')).json(); } catch { return; }
-  const banner = document.getElementById('push-banner');
-  if (s.needs_push) {
-    document.getElementById('push-banner-text').textContent =
-      '⚠ Unsaved changes — not yet monitoring.';
-    banner.style.display = 'flex';
-  } else {
-    banner.style.display = 'none';
-  }
-}
-
-async function pushChanges() {
-  const btn = document.getElementById('push-btn');
-  btn.disabled = true;
-  const res = await fetch('/api/push', { method: 'POST' });
-  const body = await res.json();
-  btn.disabled = false;
-  if (body.ok) {
-    refreshStatus();
-  } else {
-    document.getElementById('push-banner-text').textContent =
-      'Push failed: ' + (body.error || 'unknown error');
-  }
 }
 
 function setupWatchesListeners() {
@@ -607,5 +577,4 @@ function setupWatchesListeners() {
     document.getElementById('watch-modal').style.display = 'none';
   });
   document.getElementById('watch-save').addEventListener('click', saveWatch);
-  document.getElementById('push-btn').addEventListener('click', pushChanges);
 }
