@@ -90,6 +90,27 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Operational runbook and session handover live in `VM_MIGRATION.md` and
   `HANDOVER.md` — local, gitignored, not shipped in the repo.
 
+### After-merge deploy (run when a PR merges)
+
+The VM does **not** auto-pull. After a PR lands on `main`, update the box over
+Tailscale SSH so the running services pick up the new code:
+
+```bash
+ssh noel_rodriguez_personal_gmail_co@watch \
+  'sudo -u watch git -C /opt/watch-notifier pull --ff-only && \
+   sudo systemctl restart watch-web.service'
+```
+
+- The **web app** (`webapp/flask/**`) needs the `watch-web.service` restart —
+  gunicorn caches Jinja templates in memory, so a pull alone won't show template
+  changes. Static `app.js`/`style.css` are read per-request (but restarting is
+  harmless and keeps it simple — always restart).
+- The **monitor** (`watch_monitor.py` etc.) needs no restart: the systemd timer
+  launches a fresh process every 5 min, so the pull is enough.
+- Verify: `curl -s -o /dev/null -w '%{http_code}' localhost:5000/` → `200`, and
+  the dashboard is reachable from any Tailscale device at
+  `https://watch.tailc4dd26.ts.net/`.
+
 ## Design Context
 
 The `webapp/flask` dashboard has a documented design system — see `PRODUCT.md` (register:
