@@ -60,12 +60,29 @@ percentage for its own sake.
 If tests fail, the change isn't done. Fix the root cause (or send it back to an
 implementation agent) before moving on. Never report success on unverified work.
 
-## 5. Open a PR for review
+## 5. Keep the README in step with the change
+
+Before opening the PR, check whether this change made anything in `README.md`
+wrong or incomplete, and if so update it **in the same PR**. The README is meant
+to stay a true description of the current system — a change that ships without its
+doc update is what let the README drift in the first place.
+
+Update it when the change touches something the README documents, e.g.:
+- architecture or the "How it works" flow (new/removed component, data path),
+- how it's deployed or run (host, scheduler, secrets, setup steps),
+- the Files table, tuning knobs, sources, or user-facing behavior described there.
+
+Skip it for changes with no README-visible effect (internal refactors, test-only
+work, a bugfix that doesn't change documented behavior). When in doubt, re-read the
+relevant README section against the new reality and decide. Note in the PR whether
+the README was updated or deliberately left unchanged.
+
+## 6. Open a PR for review
 
 Use the `create-pr` skill to put the work on a branch and open a pull request.
 Never commit to main; never merge it yourself — the user reviews and merges.
 
-## 6. Report
+## 7. Report
 
 Give the user the PR URL, a short summary of what changed, and how it was
 verified (tests run, results). Be honest about anything skipped or still open.
