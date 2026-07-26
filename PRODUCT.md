@@ -6,14 +6,15 @@ product
 
 ## Users
 
-Noel — the sole user, checking from a desk. He runs an hourly monitor for secondary-market
-watch listings (r/watchexchange, eBay, Chrono24) and uses this dashboard to browse matched
-deals and manage the watch registry (brand/model/size/price ceiling/reference numbers) that
-drives what the monitor looks for. Desktop-first; mobile polish is not a priority.
+Noel — the sole user, checking from a desk. He runs a monitor that scans r/watchexchange
+for secondary-market watch listings and uses this dashboard to browse matched deals and
+manage the watch registry (brand/model/size/price ceiling/reference numbers) that drives
+what the monitor looks for — he decides which watches are tracked, not a fixed target.
+Desktop-first; mobile polish is not a priority.
 
 ## Product Purpose
 
-A personal deal-triage tool. The backend monitor already does the scanning and hourly phone
+A personal deal-triage tool. The backend monitor already does the scanning and phone
 push (via ntfy) for genuinely new listings; this web app is where Noel reviews everything
 that's been found, filters/sorts by price, source, and status, and tunes the watch registry
 that controls future matches. Success looks like: glance at the table, tell in seconds which
