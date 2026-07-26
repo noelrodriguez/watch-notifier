@@ -3,7 +3,7 @@ import json
 import sys
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from app import app as flask_app
@@ -170,69 +170,6 @@ def test_create_watch_size_zero_rejected_is_none_only(client, tmp_path):
     assert r.status_code == 400
 
 
-def test_status_clean(client):
-    fake = MagicMock(returncode=0, stdout="", stderr="")
-    with patch("app.subprocess.run", return_value=fake):
-        r = client.get("/api/status")
-    assert r.status_code == 200
-    body = json.loads(r.data)
-    assert body["needs_push"] is False
-
-
-def test_status_dirty(client):
-    def fake_run(cmd, **kw):
-        if "status" in cmd:
-            return MagicMock(returncode=0, stdout=" M data/watches.json\n", stderr="")
-        return MagicMock(returncode=0, stdout="0\n", stderr="")
-    with patch("app.subprocess.run", side_effect=fake_run):
-        r = client.get("/api/status")
-    body = json.loads(r.data)
-    assert body["dirty"] is True
-    assert body["needs_push"] is True
-
-
-def test_push_success(client):
-    fake = MagicMock(returncode=0, stdout="", stderr="")
-    with patch("app.subprocess.run", return_value=fake):
-        r = client.post("/api/push")
-    assert r.status_code == 200
-    assert json.loads(r.data)["ok"] is True
-
-
-def test_push_failure(client):
-    def fake_run(cmd, **kw):
-        if "push" in cmd:
-            return MagicMock(returncode=1, stdout="", stderr="rejected: auth failed")
-        if "diff" in cmd:
-            return MagicMock(returncode=1, stdout="", stderr="")  # staged changes present
-        return MagicMock(returncode=0, stdout="", stderr="")
-    with patch("app.subprocess.run", side_effect=fake_run):
-        r = client.post("/api/push")
-    assert r.status_code == 500
-    body = json.loads(r.data)
-    assert body["ok"] is False
-    assert "auth failed" in body["error"]
-
-
-def test_push_add_failure(client):
-    def fake_run(cmd, **kw):
-        if "add" in cmd:
-            return MagicMock(returncode=1, stdout="", stderr="add failed")
-        return MagicMock(returncode=0, stdout="", stderr="")
-    with patch("app.subprocess.run", side_effect=fake_run):
-        r = client.post("/api/push")
-    assert r.status_code == 500
-    assert "add failed" in json.loads(r.data)["error"]
-
-
-def test_push_timeout(client):
-    import subprocess as sp
-    with patch("app.subprocess.run", side_effect=sp.TimeoutExpired(cmd="git", timeout=30)):
-        r = client.post("/api/push")
-    assert r.status_code == 500
-    assert "timed out" in json.loads(r.data)["error"]
-
-
 # ── Delete deal ──
 
 def test_delete_deal(client, tmp_path):
@@ -254,31 +191,3 @@ def test_delete_deal_not_found(client, tmp_path):
         r = client.delete("/api/deals/nonexistent")
     assert r.status_code == 404
     assert "not found" in json.loads(r.data)["error"]
-
-
-def test_status_dirty_deals(client):
-    def fake_run(cmd, **kw):
-        if "status" in cmd:
-            return MagicMock(returncode=0, stdout=" M data/deals.json\n", stderr="")
-        return MagicMock(returncode=0, stdout="0\n", stderr="")
-    with patch("app.subprocess.run", side_effect=fake_run):
-        r = client.get("/api/status")
-    body = json.loads(r.data)
-    assert body["dirty"] is True
-    assert body["needs_push"] is True
-
-
-def test_push_stages_deals(client):
-    """push stages both watches.json and deals.json."""
-    staged_files = []
-
-    def fake_run(cmd, **kw):
-        if "add" in cmd:
-            staged_files.extend(cmd[cmd.index("add") + 1:])
-        return MagicMock(returncode=0, stdout="", stderr="")
-
-    with patch("app.subprocess.run", side_effect=fake_run):
-        r = client.post("/api/push")
-    assert r.status_code == 200
-    assert "data/deals.json" in staged_files
-    assert "data/watches.json" in staged_files

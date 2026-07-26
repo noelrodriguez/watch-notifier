@@ -2,17 +2,13 @@
 from flask import Flask, jsonify, render_template, request
 from pathlib import Path
 import json
-import logging
 import os
 import re
-import subprocess
 import tempfile
 
 app = Flask(__name__)
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-log = logging.getLogger(__name__)
 
 
 @app.route("/")
@@ -168,47 +164,6 @@ def delete_deal(deal_id):
         return jsonify({"error": "not found"}), 404
     _save_deals(remaining)
     return jsonify({"ok": True}), 200
-
-
-def _git(*args):
-    # Local-only convenience routes: this Flask app is meant to run on the user's
-    # machine, so invoking git (including push) from a route is a deliberate design
-    # choice, not a public endpoint. No CSRF/auth guard by design.
-    return subprocess.run(["git", *args], cwd=REPO_ROOT,
-                          capture_output=True, text=True, timeout=30)
-
-
-@app.route("/api/status")
-def status():
-    try:
-        st = _git("status", "--porcelain", "data/watches.json", "data/deals.json")
-        dirty = bool(st.stdout.strip())
-        ahead_res = _git("rev-list", "--count", "@{u}..HEAD")
-        ahead = int(ahead_res.stdout.strip()) if ahead_res.returncode == 0 else 0
-    except Exception as e:
-        log.warning("git status check failed: %s", e)
-        return jsonify({"dirty": False, "ahead": 0, "needs_push": False})
-    return jsonify({"dirty": dirty, "ahead": ahead,
-                    "needs_push": dirty or ahead > 0})
-
-
-@app.route("/api/push", methods=["POST"])
-def push():
-    try:
-        add = _git("add", "data/watches.json", "data/deals.json")
-        if add.returncode != 0:
-            return jsonify({"ok": False, "error": add.stderr.strip()}), 500
-        diff = _git("diff", "--cached", "--quiet", "data/watches.json", "data/deals.json")
-        if diff.returncode == 1:  # 1 => staged changes present
-            commit = _git("commit", "-m", "chore: update watch registry and deals")
-            if commit.returncode != 0:
-                return jsonify({"ok": False, "error": commit.stderr.strip()}), 500
-        push_res = _git("push")
-        if push_res.returncode != 0:
-            return jsonify({"ok": False, "error": push_res.stderr.strip()}), 500
-    except subprocess.TimeoutExpired:
-        return jsonify({"ok": False, "error": "git command timed out"}), 500
-    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":
