@@ -288,7 +288,17 @@ def reddit_token():
         if not r.ok:
             log(f"WARN: Reddit OAuth token fetch failed: {describe_response(r)}")
             return None
-        return r.json().get("access_token")
+        body = r.json()
+        token = body.get("access_token")
+        if not token:
+            # Reddit returns HTTP 200 even when the password grant is rejected
+            # (e.g. {"error": "invalid_grant"} for a bad password or a 2FA account),
+            # so a 2xx with no token is still a failure — surface why instead of
+            # silently falling back to the anonymous RSS/HTML paths.
+            log(f"WARN: Reddit OAuth grant rejected: {body.get('error', body)} "
+                f"(check username/password, 2FA, and that the app is a 'script' type)")
+            return None
+        return token
     except Exception as e:
         log(f"WARN: Reddit OAuth token error: {e}")
         return None

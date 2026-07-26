@@ -54,6 +54,29 @@ def test_reddit_token_none_on_http_error(monkeypatch):
     assert watch_monitor.reddit_token() is None
 
 
+def test_reddit_token_none_on_200_with_error(monkeypatch, capsys):
+    """Reddit returns HTTP 200 with {"error": "invalid_grant"} for a bad password
+    grant. A 2xx with no access_token must fail AND log why — the old code returned
+    None silently and fell back to RSS with no clue as to the cause."""
+    _set_creds(monkeypatch)
+    resp = MagicMock(ok=True)
+    resp.json.return_value = {"error": "invalid_grant"}
+    monkeypatch.setattr(watch_monitor.requests, "post", lambda *a, **k: resp)
+    assert watch_monitor.reddit_token() is None
+    out = capsys.readouterr().out
+    assert "WARN" in out and "invalid_grant" in out
+
+
+def test_reddit_token_none_on_200_missing_token(monkeypatch, capsys):
+    """A 2xx body with neither access_token nor error still fails closed, with a WARN."""
+    _set_creds(monkeypatch)
+    resp = MagicMock(ok=True)
+    resp.json.return_value = {"scope": "*"}
+    monkeypatch.setattr(watch_monitor.requests, "post", lambda *a, **k: resp)
+    assert watch_monitor.reddit_token() is None
+    assert "WARN" in capsys.readouterr().out
+
+
 def test_reddit_token_none_on_exception(monkeypatch):
     _set_creds(monkeypatch)
 
