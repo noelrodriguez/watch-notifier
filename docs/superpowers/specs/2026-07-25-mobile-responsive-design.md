@@ -66,8 +66,10 @@ One knob: `@media (max-width: 768px)` == "mobile treatment."
   independent of the existing desktop key. `matchMedia('(max-width: 768px)')` decides
   which key is live for read/write.
 - On first mobile load (no `hiddenColsMobile` yet), seed it with the essential visible
-  set: **hot · price · brand/model · source**. All other columns start hidden on mobile
-  but remain reachable via the existing Columns menu (toggles persist to the mobile key).
+  set: **hot · price · brand/model**. All other columns start hidden on mobile but remain
+  reachable via the existing Columns menu (toggles persist to the mobile key). Source is
+  hidden by default too while r/watchexchange is the only source (the badge is identical
+  on every row); revisit if a second source is added.
 - `.table-wrap` keeps `overflow-x: auto` as a safety net if the essential set still runs
   slightly wide; reduce `.table-wrap` horizontal padding on mobile to give the table
   more room.

@@ -419,12 +419,12 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
   .toolbar { padding: 10px 12px; gap: 10px; }
   .sort-hint { display: none; }
 
-  /* Table: trim side padding, tighten cell density and the model column so the
-     essential set (price/brand/model/source) fits without sideways scroll; keep
-     overflow-x as a safety net for the widest edge cases. */
+  /* Table: trim side padding and tighten cell density so the essential set
+     (price/brand/model) fits without sideways scroll. Source is hidden by default
+     on mobile, so the model column keeps its full 180px cap and reclaims that space
+     to show more of the name; keep overflow-x as a safety net for edge cases. */
   .table-wrap { padding: 0 10px 40px; overflow-x: auto; }
   thead th, td { padding-right: 8px; }
-  .model-cell { max-width: 100px; }
 
   /* Watches view + modal: stack and fit the narrow screen. */
   #watches-view { padding: 16px 12px; }

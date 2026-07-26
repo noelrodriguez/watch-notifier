@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', 'date_seen'];
 const LS_COL_KEY = 'deals-hidden-cols';
 const LS_COL_KEY_MOBILE = 'deals-hidden-cols-mobile';
-const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'date_seen'];
+const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'source', 'date_seen'];
 
 /* Mirrors loadHiddenCols(raw, key) in app.js. raw == null means nothing stored:
    mobile seeds the essential-only default, desktop shows everything. */
@@ -54,10 +54,12 @@ assert.deepEqual(loadHiddenCols(saveHiddenCols(allHidden), LS_COL_KEY), allHidde
 // 7. Nothing stored on mobile → essential-only default (non-essentials hidden)
 assert.deepEqual(loadHiddenCols(null, LS_COL_KEY_MOBILE), new Set(MOBILE_DEFAULT_HIDDEN));
 
-// 8. Mobile default leaves the essential set visible
+// 8. Mobile default leaves the essential set visible, and hides source
+//    (single-source: the badge is identical on every row)
 const mobileHidden = loadHiddenCols(null, LS_COL_KEY_MOBILE);
-['price', 'brand', 'model', 'source'].forEach((k) =>
+['price', 'brand', 'model'].forEach((k) =>
   assert.ok(!mobileHidden.has(k), `${k} should be visible on mobile by default`));
+assert.ok(mobileHidden.has('source'), 'source should be hidden on mobile by default');
 
 // 9. Once mobile has a stored value, it wins over the default (even "hide nothing")
 assert.deepEqual(loadHiddenCols('[]', LS_COL_KEY_MOBILE), new Set());

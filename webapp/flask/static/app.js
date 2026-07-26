@@ -10,9 +10,11 @@ const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', '
 const LS_COL_KEY = 'deals-hidden-cols';
 /* Mobile keeps its own column prefs so shrinking the phone view doesn't clobber the
    desktop choice. With nothing stored, mobile defaults to the essential set
-   (hot/price/brand/model/source visible), hiding the rest — still reachable via Columns. */
+   (hot/price/brand/model visible), hiding the rest — still reachable via Columns.
+   Source is hidden by default while r/watchexchange is the only source (the badge is
+   the same on every row); revisit if a second source is added. */
 const LS_COL_KEY_MOBILE = 'deals-hidden-cols-mobile';
-const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'date_seen'];
+const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'source', 'date_seen'];
 const mobileMQ = (typeof matchMedia !== 'undefined')
   ? matchMedia('(max-width: 768px)')
   : { matches: false, addEventListener() {} };
