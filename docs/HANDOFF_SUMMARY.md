@@ -28,7 +28,8 @@ are annotated inline).
   - **⚠️ ACTION REQUIRED to activate in the cloud:** add four repo secrets —
     `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`
     (Settings → Secrets and variables → Actions). Until then the Action uses the
-    anonymous fallback (no cloud price recovery). Setup table: `docs/GITHUB_ACTIONS_SETUP.md` §1b.
+    anonymous fallback (no cloud price recovery). Setup table: `docs/GITHUB_ACTIONS_SETUP.md` §1b
+    (since removed — GitHub Actions was retired in the VM migration).
   - **Validated** before building via a throwaway spike (PR #35, since deleted): token
     grant + comment fetch confirmed from BOTH residential and datacenter (Actions) IPs.
     Token TTL ~24h.
