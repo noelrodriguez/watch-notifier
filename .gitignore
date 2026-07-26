@@ -15,6 +15,10 @@ setup.command
 setup.bat
 .setup_progress
 
+# VM migration runbook + session handover — local working notes, not shipped
+VM_MIGRATION.md
+HANDOVER.md
+
 # Python
 __pycache__/
 *.py[cod]
