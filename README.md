@@ -1,16 +1,22 @@
 # watch-notifier
 
-Monitor for **Longines Master Collection Chrono Moonphase (40mm)** secondary-market
-listings. Scans **r/watchexchange** and pushes new finds to your phone via
-**[ntfy](https://ntfy.sh)**. Runs on a **self-hosted Linux VM** on a systemd timer —
-no third-party CI, no PC left running.
+A secondary-market **watch tracker**. You define which watches to track — brand,
+model, size, reference numbers, and a price ceiling — and it scans **r/watchexchange**
+for matching listings and pushes new finds to your phone via **[ntfy](https://ntfy.sh)**.
+Runs on a **self-hosted Linux VM** on a systemd timer — no third-party CI, no PC left
+running.
+
+The tracked watches live in `data/watches.json` (editable in the dashboard); the
+registry currently ships with one entry — the Longines Master Collection Chrono
+Moonphase (40mm) — as a worked example, but you can add, edit, or remove any watch.
 
 ## How it works
 
 ```
 Self-hosted VM (GCP e2-micro, Debian)
   └─ systemd timer (every 5 min) → python watch_monitor.py
-       ├─ scan r/watchexchange (Reddit OAuth) → filter to relevant listings
+       ├─ for each watch in the registry → scan r/watchexchange (Reddit OAuth)
+       ├─ filter to listings matching that watch's relevance rules
        ├─ recover the asking price from the seller's OP comment
        ├─ dedup + tag against data/*.json (local disk)
        └─ push NEW listings to your ntfy topic → phone
@@ -18,7 +24,8 @@ Self-hosted VM (GCP e2-micro, Debian)
 
 - New listings only — the first run seeds a silent baseline, then you're alerted on
   genuinely new drops.
-- Anything **≤ $2,000** gets a 🔥 high-priority push.
+- Anything at or under a watch's **price ceiling** gets a 🔥 high-priority push (the
+  ceiling is set per watch in the registry).
 - State lives on the VM's local disk (`data/monitor_state.json` dedup memory,
   `data/deals.json` deal history). There is **no** commit-back-to-git step — the VM is
   the sole writer.
