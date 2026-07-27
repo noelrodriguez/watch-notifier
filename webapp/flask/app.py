@@ -30,6 +30,33 @@ def deals():
     return jsonify(data)
 
 
+# Dashboard config (currently just the trend-chart time ranges). Read fresh per
+# request and edited directly on disk, so changes show on the next page load with no
+# restart. Built-in defaults keep the app working if the file is absent or malformed.
+_CONFIG_DEFAULTS = {
+    "trend_ranges": [
+        {"label": "1M", "months": 1},
+        {"label": "2M", "months": 2},
+        {"label": "3M", "months": 3},
+        {"label": "6M", "months": 6},
+        {"label": "All", "months": None},
+    ],
+    "default_range": "3M",
+}
+
+
+@app.route("/api/config")
+def config():
+    p = DATA_DIR / "dashboard_config.json"
+    if not p.exists():
+        return jsonify(_CONFIG_DEFAULTS)
+    try:
+        data = json.loads(p.read_text())
+    except Exception:
+        return jsonify(_CONFIG_DEFAULTS)
+    return jsonify(data if isinstance(data, dict) else _CONFIG_DEFAULTS)
+
+
 @app.route("/api/watches")
 def watches():
     return jsonify(_load_watches())

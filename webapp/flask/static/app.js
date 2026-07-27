@@ -2,6 +2,36 @@
 
 let allDeals = [];
 
+/* Dashboard config (trend-chart time ranges), fetched fresh on load from /api/config
+   so editing data/dashboard_config.json on the box changes the range buttons with no
+   code change. These are the fallbacks if the fetch fails. */
+const DEFAULT_TREND_CONFIG = {
+  trend_ranges: [
+    { label: '1M', months: 1 },
+    { label: '2M', months: 2 },
+    { label: '3M', months: 3 },
+    { label: '6M', months: 6 },
+    { label: 'All', months: null },
+  ],
+  default_range: '3M',
+};
+let trendConfig = DEFAULT_TREND_CONFIG;
+
+async function fetchConfig() {
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) return;
+    const cfg = await res.json();
+    if (cfg && Array.isArray(cfg.trend_ranges) && cfg.trend_ranges.length) {
+      trendConfig = {
+        trend_ranges: cfg.trend_ranges,
+        default_range: cfg.default_range
+          || cfg.trend_ranges[cfg.trend_ranges.length - 1].label,
+      };
+    }
+  } catch { /* keep the built-in defaults */ }
+}
+
 /* Active column sort. Default = newest first (date_seen, descending). */
 let sortState = { column: 'date_seen', dir: 'desc' };
 
@@ -301,42 +331,75 @@ function median(nums) {
 /* Fewer than this many priced points isn't a trend — callers show a sparse state. */
 const TREND_MIN_POINTS = 3;
 
-/* Hand-rolled inline-SVG sparkline: one gold polyline, min–max normalized. Options:
-   w/h/pad size it; `mark` highlights a price point (green if under ceiling, else gold);
-   `big` + `fill` + `median` add an area fill and a dust median guide for the detail view.
-   No axes or labels — it stays inside DESIGN.md's No-Display rule. */
-function sparkline(series, opts = {}) {
-  const w = opts.w || 60, h = opts.h || 18, pad = opts.pad || 2;
+/* Filter a time-ordered series to the last `months` (null = keep all). Used by the
+   detail chart's range selector; a pure function so the self-check can cover it. */
+function filterByMonths(series, months) {
+  if (months == null) return series;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return series.filter((p) => new Date(p.date) >= cutoff);
+}
+
+/* Shared coordinate mapping for both the row sparkline and the detail chart: min–max
+   normalized, x spread evenly across the width (a single point sits centered). */
+function sparkCoords(series, w, h, pad) {
   const prices = series.map((p) => p.price);
   const lo = Math.min(...prices), hi = Math.max(...prices);
   const span = hi - lo || 1;
   const n = series.length;
-  const x = (i) => pad + (n === 1 ? (w - 2 * pad) / 2 : (i * (w - 2 * pad)) / (n - 1));
-  const y = (v) => h - pad - ((v - lo) / span) * (h - 2 * pad);
-  const pts = series.map((p, i) => `${x(i).toFixed(1)},${y(p.price).toFixed(1)}`).join(' ');
-  let extra = '';
-  if (opts.fill) {
-    extra += `<polygon points="${x(0).toFixed(1)},${(h - pad).toFixed(1)} ${pts} `
-      + `${x(n - 1).toFixed(1)},${(h - pad).toFixed(1)}" fill="#c9a84c" opacity="0.08"/>`;
-  }
-  if (opts.median != null && span) {
-    const my = y(opts.median).toFixed(1);
-    extra += `<line x1="${pad}" y1="${my}" x2="${w - pad}" y2="${my}" stroke="#9a9282" `
-      + `stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>`;
-  }
+  const xf = (i) => pad + (n === 1 ? (w - 2 * pad) / 2 : (i * (w - 2 * pad)) / (n - 1));
+  const yf = (v) => h - pad - ((v - lo) / span) * (h - 2 * pad);
+  return { prices, xf, yf, n };
+}
+
+/* Small static row sparkline: one gold polyline, `mark` highlights this row's price
+   (green if under ceiling, else gold). No axes/labels — inside DESIGN.md's No-Display rule. */
+function sparkline(series, opts = {}) {
+  const w = opts.w || 60, h = opts.h || 18, pad = opts.pad || 2;
+  const { prices, xf, yf } = sparkCoords(series, w, h, pad);
+  const pts = series.map((p, i) => `${xf(i).toFixed(1)},${yf(p.price).toFixed(1)}`).join(' ');
   let dot = '';
   if (opts.mark != null) {
     const i = prices.lastIndexOf(opts.mark);
     if (i >= 0) {
       const col = opts.markHot ? '#5db85d' : '#c9a84c';
-      dot = `<circle cx="${x(i).toFixed(1)}" cy="${y(opts.mark).toFixed(1)}" `
-        + `r="${opts.big ? 2.5 : 2}" fill="${col}"/>`;
+      dot = `<circle cx="${xf(i).toFixed(1)}" cy="${yf(opts.mark).toFixed(1)}" r="2" fill="${col}"/>`;
     }
   }
-  return `<svg class="sparkline${opts.big ? ' sparkline-big' : ''}" width="${w}" height="${h}" `
-    + `viewBox="0 0 ${w} ${h}" aria-hidden="true">${extra}`
-    + `<polyline points="${pts}" fill="none" stroke="#c9a84c" `
-    + `stroke-width="${opts.big ? 1.5 : 1}" opacity="0.85"/>${dot}</svg>`;
+  return `<svg class="sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" `
+    + `aria-hidden="true"><polyline points="${pts}" fill="none" stroke="#c9a84c" `
+    + `stroke-width="1" opacity="0.85"/>${dot}</svg>`;
+}
+
+/* Larger interactive chart for the detail modal: area fill + dust median guide + gold
+   line, plus hidden crosshair/hover-dot the hover handler drives. Returns the SVG markup
+   and the per-point pixel coords so wireTrendHover can map the mouse to the nearest point. */
+function buildTrendChart(series, opts) {
+  const { w, h, pad } = opts;
+  const { prices, xf, yf } = sparkCoords(series, w, h, pad);
+  const points = series.map((p, i) => ({ x: xf(i), y: yf(p.price), price: p.price, date: p.date }));
+  const line = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const area = `<polygon points="${xf(0).toFixed(1)},${(h - pad).toFixed(1)} ${line} `
+    + `${xf(series.length - 1).toFixed(1)},${(h - pad).toFixed(1)}" fill="#c9a84c" opacity="0.08"/>`;
+  const medY = yf(opts.median).toFixed(1);
+  const medLine = `<line x1="${pad}" y1="${medY}" x2="${w - pad}" y2="${medY}" stroke="#9a9282" `
+    + `stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>`;
+  let mark = '';
+  if (opts.mark != null) {
+    const i = prices.lastIndexOf(opts.mark);
+    if (i >= 0) {
+      const col = opts.markHot ? '#5db85d' : '#c9a84c';
+      mark = `<circle cx="${points[i].x.toFixed(1)}" cy="${points[i].y.toFixed(1)}" r="2.5" fill="${col}"/>`;
+    }
+  }
+  const svg = `<svg class="trend-svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" `
+    + `preserveAspectRatio="xMidYMid meet">${area}${medLine}`
+    + `<polyline points="${line}" fill="none" stroke="#c9a84c" stroke-width="1.5" opacity="0.85"/>`
+    + `${mark}`
+    + `<line class="trend-cross" x1="0" y1="${pad}" x2="0" y2="${h - pad}" stroke="#c9a84c" `
+    + `stroke-width="0.5" opacity="0"/>`
+    + `<circle class="trend-hoverdot" r="3" fill="#c9a84c" opacity="0"/></svg>`;
+  return { svg, points, dims: { w, h } };
 }
 
 /* ── Render ── */
@@ -432,11 +495,16 @@ function capitalize(s) {
 }
 
 /* ── Deal detail modal ── */
+/* Holds the open deal + its full (all-time) model series + the selected range, so the
+   range buttons can re-filter and re-render without recomputing the grouping. */
+let trendState = null;
+
 function openDealDetail(id) {
   const d = allDeals.find((x) => String(x.id) === String(id));
   if (!d) return;
   const key = modelKey(d);
   const h = priceHistory(allDeals)[key];
+  const fullSeries = h ? h.series : [];
   const gaveUp = d.price === -1;
   const priceStr = gaveUp ? '⚠ no price'
     : d.price != null ? `$${d.price.toLocaleString()}` : '—';
@@ -450,13 +518,16 @@ function openDealDetail(id) {
     ['Source', d.source || '—'],
     ['Seen', d.date_seen ? new Date(d.date_seen).toLocaleDateString() : '—'],
   ];
-  const trend = (h && h.count >= TREND_MIN_POINTS)
-    ? `${sparkline(h.series, { w: 320, h: 90, pad: 6, big: true, fill: true,
-        median: h.median, mark: d.price > 0 ? d.price : null, markHot: d.is_hot })}
-       <div class="trend-stats">${h.count} listings · median $${h.median.toLocaleString()}`
-        + ` · $${h.min.toLocaleString()}–$${h.max.toLocaleString()}</div>`
-    : `<div class="trend-sparse-msg">Not enough history yet for `
-        + `${escapeHtml(key || 'this model')}.</div>`;
+
+  // Range buttons come from the config; initial selection = the config default.
+  const def = trendConfig.trend_ranges.find((r) => r.label === trendConfig.default_range)
+    || trendConfig.trend_ranges[trendConfig.trend_ranges.length - 1];
+  trendState = { deal: d, series: fullSeries, months: def ? def.months : null };
+  const rangesHtml = trendConfig.trend_ranges.map((r) => {
+    const m = r.months == null ? '' : r.months;
+    const active = (r.months == null ? null : r.months) === trendState.months ? ' active' : '';
+    return `<button class="trend-range-btn${active}" data-months="${m}">${escapeHtml(r.label)}</button>`;
+  }).join('');
 
   document.getElementById('deal-detail-title').textContent =
     d.title || key || 'Listing';
@@ -469,11 +540,80 @@ function openDealDetail(id) {
     </dl>
     <div class="detail-trend">
       <div class="label">Median asking over time</div>
-      ${trend}
+      ${fullSeries.length ? `<div class="trend-ranges">${rangesHtml}</div>` : ''}
+      <div class="trend-panel" id="trend-panel"></div>
     </div>
     ${d.url ? `<a class="detail-link" href="${escapeHtml(d.url)}" target="_blank" `
       + `rel="noopener">Open listing ↗</a>` : ''}`;
+
+  document.querySelectorAll('#deal-detail-body .trend-range-btn').forEach((b) => {
+    b.addEventListener('click', () => {
+      trendState.months = b.dataset.months === '' ? null : Number(b.dataset.months);
+      document.querySelectorAll('#deal-detail-body .trend-range-btn')
+        .forEach((x) => x.classList.toggle('active', x === b));
+      renderTrendPanel();
+    });
+  });
+
+  renderTrendPanel();
   document.getElementById('deal-modal').style.display = 'flex';
+}
+
+/* Render the chart for the current trendState (deal + series + selected range). */
+function renderTrendPanel() {
+  const panel = document.getElementById('trend-panel');
+  if (!panel || !trendState) return;
+  const { deal, series, months } = trendState;
+  const pts = filterByMonths(series, months);
+  if (!pts.length) {
+    panel.innerHTML = series.length
+      ? '<div class="trend-sparse-msg">No listings in this range.</div>'
+      : `<div class="trend-sparse-msg">No price history yet for this model.</div>`;
+    return;
+  }
+  const prices = pts.map((p) => p.price);
+  const med = median(prices), min = Math.min(...prices), max = Math.max(...prices);
+  const chart = buildTrendChart(pts, { w: 320, h: 90, pad: 6, median: med,
+    mark: deal.price > 0 ? deal.price : null, markHot: deal.is_hot });
+  panel.innerHTML =
+    `<div class="trend-chart-wrap">${chart.svg}<div class="trend-tooltip" style="display:none"></div></div>`
+    + `<div class="trend-stats">${pts.length} listing${pts.length !== 1 ? 's' : ''} · `
+    + `median $${Math.round(med).toLocaleString()} · $${min.toLocaleString()}–$${max.toLocaleString()}</div>`;
+  wireTrendHover(panel, chart);
+}
+
+/* Snap a crosshair + dot + tooltip to the nearest point as the mouse moves over the chart. */
+function wireTrendHover(panel, chart) {
+  const svg = panel.querySelector('.trend-svg');
+  const wrap = panel.querySelector('.trend-chart-wrap');
+  const tip = panel.querySelector('.trend-tooltip');
+  const cross = svg.querySelector('.trend-cross');
+  const dot = svg.querySelector('.trend-hoverdot');
+  const vbw = chart.dims.w;
+
+  svg.addEventListener('mousemove', (e) => {
+    const rect = svg.getBoundingClientRect();
+    const scale = rect.width / vbw;               // CSS px per viewBox unit (uniform)
+    const vbX = (e.clientX - rect.left) / scale;
+    let best = chart.points[0];
+    for (const p of chart.points) {
+      if (Math.abs(p.x - vbX) < Math.abs(best.x - vbX)) best = p;
+    }
+    cross.setAttribute('x1', best.x); cross.setAttribute('x2', best.x);
+    cross.setAttribute('opacity', '0.4');
+    dot.setAttribute('cx', best.x); dot.setAttribute('cy', best.y);
+    dot.setAttribute('opacity', '1');
+    tip.innerHTML = `<span class="tt-price">$${best.price.toLocaleString()}</span>`
+      + `<span class="tt-date">${new Date(best.date).toLocaleDateString()}</span>`;
+    tip.style.display = 'block';
+    tip.style.left = `${best.x * scale}px`;
+    tip.style.top = `${best.y * scale}px`;
+  });
+  svg.addEventListener('mouseleave', () => {
+    cross.setAttribute('opacity', '0');
+    dot.setAttribute('opacity', '0');
+    tip.style.display = 'none';
+  });
 }
 
 function setupDealModal() {
@@ -612,6 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupFilterDrawer();
   setupDealModal();
   setupWatchesListeners();
+  fetchConfig();
   fetchData();
 });
 

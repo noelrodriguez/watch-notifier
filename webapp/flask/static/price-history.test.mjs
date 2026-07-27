@@ -22,6 +22,13 @@ function median(nums) {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
+function filterByMonths(series, months) {
+  if (months == null) return series;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return series.filter((p) => new Date(p.date) >= cutoff);
+}
+
 function priceHistory(deals) {
   const groups = {};
   for (const d of deals) {
@@ -95,5 +102,19 @@ const sparse = priceHistory([
   { brand: 'B', model: 'Y', price: 200, date_seen: '2026-01-02T00:00:00Z' },
 ]);
 assert.equal(sparse['B · Y'].count, 2);         // caller decides <3 → sparse state
+
+// ── filterByMonths: windows the series by date, relative to now ──
+const now = Date.now();
+const daysAgo = (n) => new Date(now - n * 864e5).toISOString();
+const windowed = [
+  { date: daysAgo(3), price: 1 },     // within 1 month
+  { date: daysAgo(50), price: 2 },    // within 3 months, not 1
+  { date: daysAgo(200), price: 3 },   // only "all"
+];
+assert.equal(filterByMonths(windowed, null).length, 3);  // null → keep all
+assert.equal(filterByMonths(windowed, 1).length, 1);      // only the 3-day-old point
+assert.equal(filterByMonths(windowed, 3).length, 2);      // 3- and 50-day-old points
+assert.deepEqual(filterByMonths(windowed, 1).map((p) => p.price), [1]);
+assert.deepEqual(filterByMonths([], 3), []);              // empty in → empty out
 
 console.log('price-history.test.mjs: all checks passed');
