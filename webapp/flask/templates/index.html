@@ -120,6 +120,13 @@
           </div>
         </div>
         <div class="sort-hint">Click a column to sort</div>
+        <select id="mobile-sort" class="mobile-sort" aria-label="Sort deals">
+          <option value="date_seen:desc">Newest first</option>
+          <option value="date_seen:asc">Oldest first</option>
+          <option value="price:asc">Price: low → high</option>
+          <option value="price:desc">Price: high → low</option>
+          <option value="brand:asc">Brand: A → Z</option>
+        </select>
       </div>
     </div>
 
@@ -142,6 +149,7 @@
         </thead>
         <tbody id="deals-tbody"></tbody>
       </table>
+      <div class="deal-cards" id="deal-cards"></div>
       <div class="empty-state" id="empty-state" style="display:none">
         No deals yet — check back after the next monitor run.
       </div>

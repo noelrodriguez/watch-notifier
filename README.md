@@ -102,10 +102,11 @@ Watches are configured in `data/watches.json` — each entry has `brand`, `model
 the file directly or use the **Watches** tab in the dashboard. The only monitor-level
 knob that stays in `watch_monitor.py` is `MAX_PUSH_PER_RUN`.
 
-The dashboard's trend-chart time ranges live in `data/dashboard_config.json`
-(`trend_ranges` + `default_range`). Edit it on the box to change which range buttons the
-detail chart offers — the frontend reads it fresh on each page load, so no restart is
-needed. If the file is missing or malformed, the app falls back to built-in defaults.
+Live dashboard config lives in `data/dashboard_config.json` — the trend-chart time
+ranges (`trend_ranges` + `default_range`) and `mobile_deals_layout` (`"cards"` default /
+`"table"`) which picks the phone Deals UI. Edit it on the box; the frontend reads it
+fresh on each page load, so no restart is needed, and a missing/malformed file falls back
+to built-in defaults. Full key reference: [`docs/dashboard_config.md`](docs/dashboard_config.md).
 
 ## Caveats
 

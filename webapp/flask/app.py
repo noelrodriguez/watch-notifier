@@ -42,6 +42,7 @@ _CONFIG_DEFAULTS = {
         {"label": "All", "months": None},
     ],
     "default_range": "3M",
+    "mobile_deals_layout": "cards",
 }
 
 
