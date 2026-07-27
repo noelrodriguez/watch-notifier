@@ -250,6 +250,11 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
 .source-ebay   { background: #1a1820; color: #7c9fc0; border: 1px solid #202835; }
 .source-chrono { background: #201a10; color: #c09a50; border: 1px solid #352810; }
 
+/* ── Trend sparkline ── */
+.trend-cell   { white-space: nowrap; }
+.sparkline    { display: block; }
+.trend-sparse { color: #444; padding-left: 6px; }  /* <3 priced points: no real trend */
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center;
@@ -312,6 +317,29 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
 .advanced summary { cursor: pointer; color: #c9a84c; margin: 10px 0; }
 .label { color: #888; font-size: 0.85em; text-transform: uppercase;
   letter-spacing: 0.5px; margin-bottom: 6px; }
+
+/* ── Deal detail modal ── */
+.deal-detail-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.deal-detail-close { background: transparent; border: none; color: #777; font-size: 14px;
+  line-height: 1; cursor: pointer; transition: color 0.15s; }
+.deal-detail-close:hover { color: #c9a84c; }
+/* The price is the hero of the detail view — a deliberate, single exception to the
+   No-Display rule (DESIGN.md), kept modest at 18px. */
+.detail-price { font-size: 18px; font-weight: 600; margin: 2px 0; }
+.detail-model { color: #c9a84c; font-size: 11px; letter-spacing: 1px; margin-bottom: 14px; }
+.detail-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 0 16px; }
+.detail-grid dt { color: #777; font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  align-self: center; }
+.detail-grid dd { color: #c0b89a; font-size: 13px; margin: 0; }
+.detail-trend { border-top: 1px solid #1e1e2e; padding-top: 14px; }
+.sparkline-big { width: 100%; height: auto; max-width: 320px; margin: 4px 0; }
+.trend-stats { color: #9a9282; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  margin-top: 6px; }
+.trend-sparse-msg { color: #444; font-size: 12px; padding: 8px 0; }
+.detail-link { display: inline-block; margin-top: 16px; color: #c9a84c; font-size: 12px;
+  text-decoration: none; border: 1px solid #c9a84c44; padding: 7px 14px; border-radius: 4px;
+  transition: border-color 0.15s; }
+.detail-link:hover { border-color: #c9a84c; }
 
 /* ── Toolbar right group ── */
 .toolbar-right { display: flex; align-items: center; gap: 16px; }
