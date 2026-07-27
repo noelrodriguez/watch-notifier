@@ -17,6 +17,18 @@ const DEFAULT_TREND_CONFIG = {
 };
 let trendConfig = DEFAULT_TREND_CONFIG;
 
+/* Which UI the Deals view uses on a phone (≤768px): 'cards' (tile stack, the default)
+   or 'table' (the auto-hide-columns table). Set via mobile_deals_layout in
+   data/dashboard_config.json — flip it on the box and the next page load swaps, no
+   restart. Desktop always uses the table regardless of this value. */
+let mobileLayout = 'cards';
+
+/* Pure: resolve which renderer to use. Cards only on a phone AND when configured for
+   cards; anything else (desktop, or an unknown config value) falls back to the table. */
+function pickLayout(isMobile, layout) {
+  return isMobile && layout === 'cards' ? 'cards' : 'table';
+}
+
 async function fetchConfig() {
   try {
     const res = await fetch('/api/config');
@@ -28,6 +40,9 @@ async function fetchConfig() {
         default_range: cfg.default_range
           || cfg.trend_ranges[cfg.trend_ranges.length - 1].label,
       };
+    }
+    if (cfg && cfg.mobile_deals_layout) {
+      mobileLayout = cfg.mobile_deals_layout === 'table' ? 'table' : 'cards';
     }
   } catch { /* keep the built-in defaults */ }
 }
@@ -279,6 +294,26 @@ function updateSortIndicators() {
   });
 }
 
+/* Cards have no column headers to click, so the mobile toolbar carries a sort <select>
+   bound to the same sortState the header clicks write. */
+const MOBILE_SORT_COLS = ['price', 'date_seen', 'brand'];
+
+/* Pure: 'price:asc' → { column:'price', dir:'asc' }; anything unexpected → newest-first. */
+function parseMobileSort(v) {
+  const [column, dir] = String(v).split(':');
+  if (MOBILE_SORT_COLS.includes(column) && (dir === 'asc' || dir === 'desc')) {
+    return { column, dir };
+  }
+  return { column: 'date_seen', dir: 'desc' };
+}
+
+/* Reflect the current sort into the mobile <select> (no-op if the active column isn't
+   one the select offers, e.g. a desktop sort carried across a rotate). */
+function syncMobileSort() {
+  const sel = document.getElementById('mobile-sort');
+  if (sel) sel.value = `${sortState.column}:${sortState.dir}`;
+}
+
 function dateCutoff(range) {
   const now = Date.now();
   if (range === '24h') return new Date(now - 864e5);
@@ -409,6 +444,7 @@ function render() {
   const sorted   = sortDeals(filtered);
 
   const tbody   = document.getElementById('deals-tbody');
+  const cards   = document.getElementById('deal-cards');
   const empty   = document.getElementById('empty-state');
   const countEl = document.getElementById('result-count');
 
@@ -417,8 +453,13 @@ function render() {
     `<span>${sorted.length}</span> listing${sorted.length !== 1 ? 's' : ''}` +
     (hotCount ? ` · <span>${hotCount}</span> hot deal${hotCount !== 1 ? 's' : ''}` : '');
 
+  const mode = pickLayout(mobileMQ.matches, mobileLayout);
+  document.body.classList.toggle('layout-cards', mode === 'cards');
+  syncMobileSort();
+
   if (!sorted.length) {
     tbody.innerHTML = '';
+    cards.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
@@ -426,40 +467,70 @@ function render() {
 
   const hist = priceHistory(allDeals);
 
-  tbody.innerHTML = sorted
-    .map((d) => {
-      const rowCls   = d.is_hot ? ' class="hot"' : '';
-      const gaveUp   = d.price === -1;  // monitor flag: price never recovered after retries
-      const price    = gaveUp ? '⚠ no price' : d.price != null ? `$${d.price.toLocaleString()}` : '—';
-      const priceCls = gaveUp ? 'price-missing'
-        : d.is_hot ? 'price-hot' : d.price != null ? 'price-ok' : 'price-none';
-      const ref      = d.ref_matches && d.ref_matches.length ? d.ref_matches[0] : '—';
-      const dialStr  = d.dial
-        ? `${capitalize(d.dial)} · ${capitalize(d.strap || '')}`
-        : '—';
-      const safeTitle = escapeHtml(d.title || '');
-      const safeId = escapeHtml(encodeURIComponent(d.id || ''));
-      const h = hist[modelKey(d)];
-      const trendCell = (h && h.count >= TREND_MIN_POINTS)
-        ? sparkline(h.series, { mark: d.price > 0 ? d.price : null, markHot: d.is_hot })
-        : '<span class="trend-sparse" title="Not enough history yet">–</span>';
-      return `<tr${rowCls} data-deal-id="${safeId}">
-        <td>${d.is_hot ? '<span class="hot-badge">🔥</span>' : ''}</td>
-        <td class="price-cell ${priceCls} col-price">${price}</td>
-        <td class="title-cell col-title" title="${safeTitle}">${escapeHtml(d.title || '—')}</td>
-        <td class="brand-cell col-brand">${escapeHtml(d.brand || '—')}</td>
-        <td class="model-cell col-model">${escapeHtml(d.model || '—')}</td>
-        <td class="ref-cell col-ref">${escapeHtml(ref)}</td>
-        <td class="dial-cell col-dial">${escapeHtml(dialStr)}</td>
-        <td class="col-source">${sourceBadge(d.source)}</td>
-        <td class="age-cell col-date_seen">${relativeTime(d.date_seen)}</td>
-        <td class="trend-cell col-trend">${trendCell}</td>
-        <td><button class="deal-del-btn" data-id="${safeId}" title="Delete deal">✕</button></td>
-      </tr>`;
-    })
-    .join('');
+  if (mode === 'cards') {
+    tbody.innerHTML = '';
+    cards.innerHTML = sorted.map((d) => dealCardHtml(dealFields(d, hist))).join('');
+  } else {
+    cards.innerHTML = '';
+    tbody.innerHTML = sorted.map((d) => dealRowHtml(dealFields(d, hist))).join('');
+    applyColVisibility();
+  }
+}
 
-  applyColVisibility();
+/* Shared field prep so the table row and the mobile card render the exact same data
+   from one place — sort/filter stays single-source; only the final markup differs. */
+function dealFields(d, hist) {
+  const gaveUp   = d.price === -1;  // monitor flag: price never recovered after retries
+  const price    = gaveUp ? '⚠ no price' : d.price != null ? `$${d.price.toLocaleString()}` : '—';
+  const priceCls = gaveUp ? 'price-missing'
+    : d.is_hot ? 'price-hot' : d.price != null ? 'price-ok' : 'price-none';
+  const ref      = d.ref_matches && d.ref_matches.length ? d.ref_matches[0] : '—';
+  const dialStr  = d.dial ? `${capitalize(d.dial)} · ${capitalize(d.strap || '')}` : '—';
+  const h = hist[modelKey(d)];
+  const trendCell = (h && h.count >= TREND_MIN_POINTS)
+    ? sparkline(h.series, { mark: d.price > 0 ? d.price : null, markHot: d.is_hot })
+    : '<span class="trend-sparse" title="Not enough history yet">–</span>';
+  return {
+    isHot: d.is_hot, price, priceCls, ref, dialStr, trendCell,
+    title: d.title || '', brand: d.brand || '—', model: d.model || '—',
+    source: d.source, dateSeen: d.date_seen,
+    safeId: escapeHtml(encodeURIComponent(d.id || '')),
+  };
+}
+
+function dealRowHtml(x) {
+  const rowCls = x.isHot ? ' class="hot"' : '';
+  const safeTitle = escapeHtml(x.title);
+  return `<tr${rowCls} data-deal-id="${x.safeId}">
+    <td>${x.isHot ? '<span class="hot-badge">🔥</span>' : ''}</td>
+    <td class="price-cell ${x.priceCls} col-price">${x.price}</td>
+    <td class="title-cell col-title" title="${safeTitle}">${escapeHtml(x.title || '—')}</td>
+    <td class="brand-cell col-brand">${escapeHtml(x.brand)}</td>
+    <td class="model-cell col-model">${escapeHtml(x.model)}</td>
+    <td class="ref-cell col-ref">${escapeHtml(x.ref)}</td>
+    <td class="dial-cell col-dial">${escapeHtml(x.dialStr)}</td>
+    <td class="col-source">${sourceBadge(x.source)}</td>
+    <td class="age-cell col-date_seen">${relativeTime(x.dateSeen)}</td>
+    <td class="trend-cell col-trend">${x.trendCell}</td>
+    <td><button class="deal-del-btn" data-id="${x.safeId}" title="Delete deal">✕</button></td>
+  </tr>`;
+}
+
+/* Mobile tile: price hero + hot glyph + source on top, brand/model title, muted
+   ref · dial/strap and date below. Whole card opens the deal (same as a row click);
+   a `.hot` card keeps the 2px left accent border the `.hot` row has. */
+function dealCardHtml(x) {
+  const sub = x.dialStr !== '—' ? `${escapeHtml(x.ref)} · ${escapeHtml(x.dialStr)}` : escapeHtml(x.ref);
+  return `<article class="deal-card${x.isHot ? ' hot' : ''}" data-deal-id="${x.safeId}">
+    <button class="deal-del-btn" data-id="${x.safeId}" title="Delete deal">✕</button>
+    <div class="deal-card-top">
+      <span class="price-cell ${x.priceCls}">${x.isHot ? '<span class="hot-badge">🔥</span> ' : ''}${x.price}</span>
+      ${sourceBadge(x.source)}
+    </div>
+    <div class="deal-card-title">${escapeHtml(x.brand)} · ${escapeHtml(x.model)}</div>
+    <div class="deal-card-sub">${sub}</div>
+    <div class="deal-card-meta">${relativeTime(x.dateSeen)}</div>
+  </article>`;
 }
 
 /* ── Helpers ── */
@@ -656,6 +727,21 @@ function setupListeners() {
     openDealDetail(decodeURIComponent(row.dataset.dealId));
   });
 
+  document.getElementById('deal-cards').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.deal-del-btn');
+    if (delBtn) { e.stopPropagation(); deleteDeal(delBtn.dataset.id); return; }
+    const card = e.target.closest('[data-deal-id]');
+    if (!card) return;
+    openDealDetail(decodeURIComponent(card.dataset.dealId));
+  });
+
+  const mobileSort = document.getElementById('mobile-sort');
+  mobileSort.addEventListener('change', () => {
+    sortState = parseMobileSort(mobileSort.value);
+    updateSortIndicators();
+    render();
+  });
+
   document.getElementById('clear-btn').addEventListener('click', () => {
     hotToggle.setAttribute('aria-pressed', 'false');
     hotToggle.classList.remove('active');
@@ -700,6 +786,7 @@ function setupColToggle() {
     syncColPopover();
     applyColVisibility();
     document.body.classList.remove('filter-open');  // drawer is mobile-only
+    render();  // crossing the breakpoint may swap table ↔ cards
   });
 
   btn.addEventListener('click', (e) => {
@@ -752,8 +839,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setupFilterDrawer();
   setupDealModal();
   setupWatchesListeners();
-  fetchConfig();
-  fetchData();
+  // Config first (it decides the mobile layout) so the initial render picks the right
+  // UI instead of flashing cards before a 'table' setting arrives.
+  fetchConfig().finally(fetchData);
 });
 
 /* ── Watches view ── */

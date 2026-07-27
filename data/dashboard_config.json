@@ -6,5 +6,6 @@
     { "label": "6M", "months": 6 },
     { "label": "All", "months": null }
   ],
-  "default_range": "3M"
+  "default_range": "3M",
+  "mobile_deals_layout": "cards"
 }

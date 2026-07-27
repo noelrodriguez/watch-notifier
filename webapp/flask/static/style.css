@@ -398,6 +398,10 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
 /* ── Mobile drawer controls: hidden on desktop, revealed in the media query ── */
 .filter-toggle, .filter-close, .filter-scrim { display: none; }
 
+/* Deal-card stack + its sort <select> — mobile-only; the media query reveals them
+   when body.layout-cards is set (mobile_deals_layout: "cards"). Hidden everywhere else. */
+.deal-cards, .mobile-sort { display: none; }
+
 /* ══ Mobile (≤768px) — portrait phone. Desktop rules above are untouched. ══ */
 @media (max-width: 768px) {
 
@@ -462,6 +466,52 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
   /* Toolbar: give the table more room; the desktop sort hint is noise on touch. */
   .toolbar { padding: 10px 12px; gap: 10px; }
   .sort-hint { display: none; }
+
+  /* Sort <select> replaces column-header clicking in the cards layout. */
+  .mobile-sort {
+    background: #111120;             /* field-black */
+    border: 1px solid #252535;       /* same field border used across the app */
+    color: #c0b89a;                  /* clay */
+    font-size: 11px;
+    padding: 8px 10px;
+    min-height: 40px;
+    border-radius: 4px;
+  }
+
+  /* ── Mobile deal cards (mobile_deals_layout: "cards", the default) ──
+     Each deal is a self-contained tile; scroll down a stack, never sideways. A
+     deliberate mobile-only departure from the "table is the product" north star —
+     desktop keeps the table. Reveals only when body.layout-cards is set. */
+  body.layout-cards table { display: none; }
+  body.layout-cards .col-toggle-wrap { display: none; }   /* no columns to toggle */
+  body.layout-cards .sort-hint { display: none; }
+  body.layout-cards .mobile-sort { display: inline-block; }
+  body.layout-cards .table-wrap { padding: 0 12px 40px; overflow-x: visible; }
+  body.layout-cards .deal-cards { display: flex; flex-direction: column; gap: 10px; }
+
+  .deal-card {
+    position: relative;
+    background: #0d0d16;             /* raised-black; depth from tone, not shadow */
+    border: 1px solid #1e1e2e;       /* hairline */
+    border-radius: 8px;
+    padding: 13px 14px;
+    cursor: pointer;
+  }
+  .deal-card.hot { border-left: 2px solid #5db85d; }   /* the one sanctioned side-stripe */
+  .deal-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 22px;            /* clear the delete ✕ in the corner */
+  }
+  .deal-card-top .price-cell {
+    font-size: 15px;               /* deliberate card hero — the one No-Display exception */
+    font-weight: 500;
+  }
+  .deal-card-title { margin-top: 6px; color: #e0d9cc; font-size: 13px; }  /* ivory */
+  .deal-card-sub   { margin-top: 3px; color: #9a9282; font-size: 12px; }  /* dust */
+  .deal-card-meta  { margin-top: 3px; color: #777777; font-size: 11px; }  /* fog */
+  .deal-card .deal-del-btn { position: absolute; top: 8px; right: 8px; }
 
   /* Table: trim side padding and tighten cell density so the essential set
      (price/brand/model) fits without sideways scroll. Source is hidden by default
