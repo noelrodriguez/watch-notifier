@@ -116,6 +116,7 @@
             <label class="checkbox-row"><span class="checkbox-box checked" data-col="dial"><input type="checkbox" checked></span><span class="checkbox-text">Dial / Strap</span></label>
             <label class="checkbox-row"><span class="checkbox-box checked" data-col="source"><input type="checkbox" checked></span><span class="checkbox-text">Source</span></label>
             <label class="checkbox-row"><span class="checkbox-box checked" data-col="date_seen"><input type="checkbox" checked></span><span class="checkbox-text">Seen</span></label>
+            <label class="checkbox-row"><span class="checkbox-box checked" data-col="trend"><input type="checkbox" checked></span><span class="checkbox-text">Trend</span></label>
           </div>
         </div>
         <div class="sort-hint">Click a column to sort</div>
@@ -135,6 +136,7 @@
             <th class="sortable col-dial" data-sort="dial">Dial / Strap</th>
             <th class="sortable col-source" data-sort="source">Source</th>
             <th class="sortable col-date_seen" data-sort="date_seen">Seen</th>
+            <th class="col-trend">Trend</th>
             <th></th>
           </tr>
         </thead>
@@ -183,6 +185,16 @@
       <button id="watch-cancel" type="button">Cancel</button>
       <button id="watch-save" type="button">Save</button>
     </div>
+  </div>
+</div>
+
+<div id="deal-modal" class="modal" style="display:none">
+  <div class="modal-card">
+    <div class="deal-detail-head">
+      <h3 id="deal-detail-title">Listing</h3>
+      <button id="deal-detail-close" class="deal-detail-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <div id="deal-detail-body"></div>
   </div>
 </div>
 

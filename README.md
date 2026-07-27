@@ -70,7 +70,10 @@ recovers prices from old.reddit directly.
 
 `webapp/flask/` is a Flask dashboard ("The Midnight Desk" — see `DESIGN.md`) for
 triaging saved deals (`data/deals.json`) and managing the watch registry
-(`data/watches.json`). Start it with `webapp/start.sh` (binds `127.0.0.1:5000`*).
+(`data/watches.json`). Each deals row carries a **price-trend sparkline** (median asking
+per model, derived from the deals already stored), and clicking a row opens a **detail
+view** with that model's price-history chart and a link to the listing. Start it with
+`webapp/start.sh` (binds `127.0.0.1:5000`*).
 
 *Bind `127.0.0.1`, not `localhost` — macOS AirPlay grabs port 5000 on IPv6; local dev
 uses `:5001` (see `.claude/launch.json`).

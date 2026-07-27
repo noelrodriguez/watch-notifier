@@ -6,7 +6,7 @@ let allDeals = [];
 let sortState = { column: 'date_seen', dir: 'desc' };
 
 /* ── Column visibility ── */
-const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', 'date_seen'];
+const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', 'date_seen', 'trend'];
 const LS_COL_KEY = 'deals-hidden-cols';
 /* Mobile keeps its own column prefs so shrinking the phone view doesn't clobber the
    desktop choice. With nothing stored, mobile defaults to the essential set
@@ -14,7 +14,7 @@ const LS_COL_KEY = 'deals-hidden-cols';
    Source is hidden by default while r/watchexchange is the only source (the badge is
    the same on every row); revisit if a second source is added. */
 const LS_COL_KEY_MOBILE = 'deals-hidden-cols-mobile';
-const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'source', 'date_seen'];
+const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'source', 'date_seen', 'trend'];
 const mobileMQ = (typeof matchMedia !== 'undefined')
   ? matchMedia('(max-width: 768px)')
   : { matches: false, addEventListener() {} };
@@ -257,6 +257,88 @@ function dateCutoff(range) {
   return null;
 }
 
+/* ── Price history (derived from the deals already in memory) ── */
+/* Group priced deals by watch model → a time-ordered series + summary stats. Deals with
+   no usable price (null, or the -1 "gave up" sentinel) are dropped so a stuck listing
+   can't skew a trend. Grouped by model (not ref) on purpose: refs are too sparse in this
+   dataset to trend, per the price-history PRD. */
+function priceHistory(deals) {
+  const groups = {};
+  for (const d of deals) {
+    if (d.price == null || d.price <= 0) continue;   // drops null AND the -1 sentinel
+    const key = modelKey(d);
+    if (!key) continue;                              // no brand/model → can't group
+    (groups[key] = groups[key] || []).push({ date: d.date_seen, price: d.price });
+  }
+  const out = {};
+  for (const key of Object.keys(groups)) {
+    const pts = groups[key].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const prices = pts.map((p) => p.price);
+    out[key] = {
+      series: pts,
+      count: pts.length,
+      median: median(prices),
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+      latest: prices[prices.length - 1],
+    };
+  }
+  return out;
+}
+
+function modelKey(d) {
+  const b = (d.brand || '').trim();
+  const m = (d.model || '').trim();
+  return (b || m) ? `${b} · ${m}` : '';
+}
+
+function median(nums) {
+  const s = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+/* Fewer than this many priced points isn't a trend — callers show a sparse state. */
+const TREND_MIN_POINTS = 3;
+
+/* Hand-rolled inline-SVG sparkline: one gold polyline, min–max normalized. Options:
+   w/h/pad size it; `mark` highlights a price point (green if under ceiling, else gold);
+   `big` + `fill` + `median` add an area fill and a dust median guide for the detail view.
+   No axes or labels — it stays inside DESIGN.md's No-Display rule. */
+function sparkline(series, opts = {}) {
+  const w = opts.w || 60, h = opts.h || 18, pad = opts.pad || 2;
+  const prices = series.map((p) => p.price);
+  const lo = Math.min(...prices), hi = Math.max(...prices);
+  const span = hi - lo || 1;
+  const n = series.length;
+  const x = (i) => pad + (n === 1 ? (w - 2 * pad) / 2 : (i * (w - 2 * pad)) / (n - 1));
+  const y = (v) => h - pad - ((v - lo) / span) * (h - 2 * pad);
+  const pts = series.map((p, i) => `${x(i).toFixed(1)},${y(p.price).toFixed(1)}`).join(' ');
+  let extra = '';
+  if (opts.fill) {
+    extra += `<polygon points="${x(0).toFixed(1)},${(h - pad).toFixed(1)} ${pts} `
+      + `${x(n - 1).toFixed(1)},${(h - pad).toFixed(1)}" fill="#c9a84c" opacity="0.08"/>`;
+  }
+  if (opts.median != null && span) {
+    const my = y(opts.median).toFixed(1);
+    extra += `<line x1="${pad}" y1="${my}" x2="${w - pad}" y2="${my}" stroke="#9a9282" `
+      + `stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>`;
+  }
+  let dot = '';
+  if (opts.mark != null) {
+    const i = prices.lastIndexOf(opts.mark);
+    if (i >= 0) {
+      const col = opts.markHot ? '#5db85d' : '#c9a84c';
+      dot = `<circle cx="${x(i).toFixed(1)}" cy="${y(opts.mark).toFixed(1)}" `
+        + `r="${opts.big ? 2.5 : 2}" fill="${col}"/>`;
+    }
+  }
+  return `<svg class="sparkline${opts.big ? ' sparkline-big' : ''}" width="${w}" height="${h}" `
+    + `viewBox="0 0 ${w} ${h}" aria-hidden="true">${extra}`
+    + `<polyline points="${pts}" fill="none" stroke="#c9a84c" `
+    + `stroke-width="${opts.big ? 1.5 : 1}" opacity="0.85"/>${dot}</svg>`;
+}
+
 /* ── Render ── */
 function render() {
   const f = getFilters();
@@ -279,6 +361,8 @@ function render() {
   }
   empty.style.display = 'none';
 
+  const hist = priceHistory(allDeals);
+
   tbody.innerHTML = sorted
     .map((d) => {
       const rowCls   = d.is_hot ? ' class="hot"' : '';
@@ -290,10 +374,13 @@ function render() {
       const dialStr  = d.dial
         ? `${capitalize(d.dial)} · ${capitalize(d.strap || '')}`
         : '—';
-      const safeUrl  = escapeHtml(d.url || '');
       const safeTitle = escapeHtml(d.title || '');
       const safeId = escapeHtml(encodeURIComponent(d.id || ''));
-      return `<tr${rowCls} data-url="${safeUrl}">
+      const h = hist[modelKey(d)];
+      const trendCell = (h && h.count >= TREND_MIN_POINTS)
+        ? sparkline(h.series, { mark: d.price > 0 ? d.price : null, markHot: d.is_hot })
+        : '<span class="trend-sparse" title="Not enough history yet">–</span>';
+      return `<tr${rowCls} data-deal-id="${safeId}">
         <td>${d.is_hot ? '<span class="hot-badge">🔥</span>' : ''}</td>
         <td class="price-cell ${priceCls} col-price">${price}</td>
         <td class="title-cell col-title" title="${safeTitle}">${escapeHtml(d.title || '—')}</td>
@@ -303,6 +390,7 @@ function render() {
         <td class="dial-cell col-dial">${escapeHtml(dialStr)}</td>
         <td class="col-source">${sourceBadge(d.source)}</td>
         <td class="age-cell col-date_seen">${relativeTime(d.date_seen)}</td>
+        <td class="trend-cell col-trend">${trendCell}</td>
         <td><button class="deal-del-btn" data-id="${safeId}" title="Delete deal">✕</button></td>
       </tr>`;
     })
@@ -343,6 +431,61 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }
 
+/* ── Deal detail modal ── */
+function openDealDetail(id) {
+  const d = allDeals.find((x) => String(x.id) === String(id));
+  if (!d) return;
+  const key = modelKey(d);
+  const h = priceHistory(allDeals)[key];
+  const gaveUp = d.price === -1;
+  const priceStr = gaveUp ? '⚠ no price'
+    : d.price != null ? `$${d.price.toLocaleString()}` : '—';
+  const priceCls = gaveUp ? 'price-missing' : d.is_hot ? 'price-hot' : 'price-ok';
+  const ref = d.ref_matches && d.ref_matches.length ? d.ref_matches[0] : '—';
+  const dialStr = d.dial ? `${capitalize(d.dial)} · ${capitalize(d.strap || '')}` : '—';
+  const rows = [
+    ['Reference', ref],
+    ['Dial / Strap', dialStr],
+    ['Size', d.size_mm ? `${d.size_mm}mm` : '—'],
+    ['Source', d.source || '—'],
+    ['Seen', d.date_seen ? new Date(d.date_seen).toLocaleDateString() : '—'],
+  ];
+  const trend = (h && h.count >= TREND_MIN_POINTS)
+    ? `${sparkline(h.series, { w: 320, h: 90, pad: 6, big: true, fill: true,
+        median: h.median, mark: d.price > 0 ? d.price : null, markHot: d.is_hot })}
+       <div class="trend-stats">${h.count} listings · median $${h.median.toLocaleString()}`
+        + ` · $${h.min.toLocaleString()}–$${h.max.toLocaleString()}</div>`
+    : `<div class="trend-sparse-msg">Not enough history yet for `
+        + `${escapeHtml(key || 'this model')}.</div>`;
+
+  document.getElementById('deal-detail-title').textContent =
+    d.title || key || 'Listing';
+  document.getElementById('deal-detail-body').innerHTML = `
+    <div class="detail-price ${priceCls}">${priceStr}`
+      + `${d.is_hot ? ' <span class="hot-badge">🔥</span>' : ''}</div>
+    <div class="detail-model">${escapeHtml(key || '—')}</div>
+    <dl class="detail-grid">
+      ${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(String(v))}</dd>`).join('')}
+    </dl>
+    <div class="detail-trend">
+      <div class="label">Median asking over time</div>
+      ${trend}
+    </div>
+    ${d.url ? `<a class="detail-link" href="${escapeHtml(d.url)}" target="_blank" `
+      + `rel="noopener">Open listing ↗</a>` : ''}`;
+  document.getElementById('deal-modal').style.display = 'flex';
+}
+
+function setupDealModal() {
+  const modal = document.getElementById('deal-modal');
+  const close = () => { modal.style.display = 'none'; };
+  document.getElementById('deal-detail-close').addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display !== 'none') close();
+  });
+}
+
 /* ── Event listeners ── */
 function setupListeners() {
   const hotToggle = document.getElementById('hot-toggle');
@@ -368,10 +511,9 @@ function setupListeners() {
   document.getElementById('deals-tbody').addEventListener('click', (e) => {
     const delBtn = e.target.closest('.deal-del-btn');
     if (delBtn) { deleteDeal(delBtn.dataset.id); return; }
-    const row = e.target.closest('tr[data-url]');
+    const row = e.target.closest('tr[data-deal-id]');
     if (!row) return;
-    const url = row.dataset.url;
-    if (url && /^https?:\/\//i.test(url)) window.open(url, '_blank');
+    openDealDetail(decodeURIComponent(row.dataset.dealId));
   });
 
   document.getElementById('clear-btn').addEventListener('click', () => {
@@ -468,6 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSortHeaders();
   setupColToggle();
   setupFilterDrawer();
+  setupDealModal();
   setupWatchesListeners();
   fetchData();
 });

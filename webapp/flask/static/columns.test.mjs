@@ -6,10 +6,10 @@
 
 import assert from 'node:assert/strict';
 
-const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', 'date_seen'];
+const COL_KEYS = ['price', 'title', 'brand', 'model', 'ref', 'dial', 'source', 'date_seen', 'trend'];
 const LS_COL_KEY = 'deals-hidden-cols';
 const LS_COL_KEY_MOBILE = 'deals-hidden-cols-mobile';
-const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'source', 'date_seen'];
+const MOBILE_DEFAULT_HIDDEN = ['title', 'ref', 'dial', 'source', 'date_seen', 'trend'];
 
 /* Mirrors loadHiddenCols(raw, key) in app.js. raw == null means nothing stored:
    mobile seeds the essential-only default, desktop shows everything. */
