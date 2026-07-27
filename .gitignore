@@ -19,6 +19,9 @@ setup.bat
 VM_MIGRATION.md
 HANDOVER.md
 
+# Product planning workspace (ideas backlog + PRDs) — local working notes, not shipped
+product/
+
 # Python
 __pycache__/
 *.py[cod]
