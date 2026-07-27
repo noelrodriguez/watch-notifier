@@ -72,8 +72,10 @@ recovers prices from old.reddit directly.
 triaging saved deals (`data/deals.json`) and managing the watch registry
 (`data/watches.json`). Each deals row carries a **price-trend sparkline** (median asking
 per model, derived from the deals already stored), and clicking a row opens a **detail
-view** with that model's price-history chart and a link to the listing. Start it with
-`webapp/start.sh` (binds `127.0.0.1:5000`*).
+view** with that model's price-history chart and a link to the listing. The chart is
+**hoverable** (nearest-point price + date) and has a **time-range selector** whose options
+come from `data/dashboard_config.json` (edit it on the box; picked up on the next page
+load). Start it with `webapp/start.sh` (binds `127.0.0.1:5000`*).
 
 *Bind `127.0.0.1`, not `localhost` — macOS AirPlay grabs port 5000 on IPv6; local dev
 uses `:5001` (see `.claude/launch.json`).
@@ -89,6 +91,7 @@ uses `:5001` (see `.claude/launch.json`).
 | `data/watches.json` | Watch registry (search terms, relevance groups, refs, price ceiling) |
 | `data/monitor_state.json` | Auto-created dedup memory |
 | `data/deals.json` | Deal history (price + brand/model enriched) |
+| `data/dashboard_config.json` | Dashboard config — the trend-chart time ranges (served fresh per page load) |
 | `docs/HANDOFF_SUMMARY.md` | Project context / decision log |
 | `docs/requested_watches.md` | Tracked watch preferences |
 
@@ -98,6 +101,11 @@ Watches are configured in `data/watches.json` — each entry has `brand`, `model
 `size_mm`, `search_terms`, `relevance_required_all`, `refs`, and `price_ceiling`. Edit
 the file directly or use the **Watches** tab in the dashboard. The only monitor-level
 knob that stays in `watch_monitor.py` is `MAX_PUSH_PER_RUN`.
+
+The dashboard's trend-chart time ranges live in `data/dashboard_config.json`
+(`trend_ranges` + `default_range`). Edit it on the box to change which range buttons the
+detail chart offers — the frontend reads it fresh on each page load, so no restart is
+needed. If the file is missing or malformed, the app falls back to built-in defaults.
 
 ## Caveats
 

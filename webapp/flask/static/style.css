@@ -332,9 +332,25 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
   align-self: center; }
 .detail-grid dd { color: #c0b89a; font-size: 13px; margin: 0; }
 .detail-trend { border-top: 1px solid #1e1e2e; padding-top: 14px; }
-.sparkline-big { width: 100%; height: auto; max-width: 320px; margin: 4px 0; }
 .trend-stats { color: #9a9282; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
   margin-top: 6px; }
+
+/* Time-range selector (segmented pills; options come from data/dashboard_config.json) */
+.trend-ranges { display: flex; gap: 4px; margin: 4px 0 10px; }
+.trend-range-btn { background: transparent; color: #777; border: 1px solid #252535;
+  border-radius: 10px; padding: 3px 10px; font-size: 9px; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+.trend-range-btn:hover { color: #c9a84c; border-color: #c9a84c44; }
+.trend-range-btn.active { color: #07070d; background: #c9a84c; border-color: #c9a84c; }
+
+/* Interactive detail chart + hover tooltip */
+.trend-chart-wrap { position: relative; }
+.trend-svg { width: 100%; height: auto; max-width: 320px; display: block; }
+.trend-tooltip { position: absolute; transform: translate(-50%, -135%); pointer-events: none;
+  background: #0d0d16; border: 1px solid #333; border-radius: 4px; padding: 4px 8px;
+  white-space: nowrap; z-index: 2; }
+.trend-tooltip .tt-price { color: #c9a84c; font-weight: 600; font-size: 12px; }
+.trend-tooltip .tt-date { color: #777; font-size: 9px; letter-spacing: 1px; margin-left: 6px; }
 .trend-sparse-msg { color: #444; font-size: 12px; padding: 8px 0; }
 .detail-link { display: inline-block; margin-top: 16px; color: #c9a84c; font-size: 12px;
   text-decoration: none; border: 1px solid #c9a84c44; padding: 7px 14px; border-radius: 4px;
