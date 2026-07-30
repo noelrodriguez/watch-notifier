@@ -78,17 +78,12 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Deployment / orchestration
 
-- The monitor runs on a **self-hosted Linux VM** (GCP e2-micro, Debian) via a
-  **systemd timer** — GitHub Actions has been retired (no `.github/workflows/`).
-  The old git-as-database pattern (committing `data/*.json` back each run, plus
-  the Flask `/api/push` git routes) is gone; the VM writes state to local disk.
-- **Reddit access:** from datacenter IPs (the VM, any CI runner) the anonymous
-  paths are unreliable — RSS discovery is heavily rate-limited and old.reddit
-  HTML price recovery is 403-blocked. The `REDDIT_*` OAuth creds are **required**
-  there for full discovery + price recovery, not optional. (Note: Reddit's token
-  endpoint returns HTTP 200 even on a rejected grant — handled in `reddit_token`.)
-- Operational runbook and session handover live in `VM_MIGRATION.md` and
-  `HANDOVER.md` — local, gitignored, not shipped in the repo.
+- Architecture & deployment (VM, systemd timer, retired git-as-database, Reddit
+  OAuth requirement): see `README.md`. Two code-level gotchas worth carrying:
+  from datacenter IPs (the VM) the `REDDIT_*` OAuth creds are **required**, not
+  optional (anonymous paths are rate-limited / 403-blocked); and Reddit's token
+  endpoint returns HTTP 200 even on a rejected grant (handled in `reddit_token`).
+- Operational runbook + session handover: `HANDOVER.md` (local, gitignored).
 
 ### After-merge deploy (run when a PR merges)
 

@@ -22,11 +22,11 @@ listings are worth a closer look, adjust watch criteria without friction.
 
 ## Brand Personality
 
-Clean, modern, dark-minimal SaaS — the Linear / Vercel / Raycast neighborhood: charcoal
-background, softly-bordered rounded cards, sparkline/micro-chart accents, one deliberate
-accent color rather than a full palette. A gold/amber accent carries a quiet nod to the
-watch/luxury subject matter without tipping into literal or ornate "watch dealer" styling.
-Precise and calm, not loud — the UI should feel like a well-made instrument, not a showroom.
+Clean, modern, dark-minimal SaaS — the Linear / Vercel / Raycast neighborhood. One
+deliberate gold/amber accent carries a quiet nod to the watch/luxury subject matter
+without tipping into literal "watch dealer" styling. Precise and calm, not loud — the UI
+should feel like a well-made instrument, not a showroom. The concrete visual system
+(surfaces, accent, typography, elevation) is specified in `DESIGN.md` — "The Midnight Desk".
 
 ## Anti-references
 
