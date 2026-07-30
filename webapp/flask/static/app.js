@@ -604,7 +604,14 @@ function openDealDetail(id) {
     d.title || key || 'Listing';
   document.getElementById('deal-detail-body').innerHTML = `
     <div class="detail-price ${priceCls}">${priceStr}`
-      + `${d.is_hot ? ' <span class="hot-badge">🔥</span>' : ''}</div>
+      + `${d.is_hot ? ' <span class="hot-badge">🔥</span>' : ''}`
+      + ` <button class="price-edit-btn" id="price-edit-btn" title="Edit price">✎</button></div>
+    <div class="price-edit" id="price-edit" style="display:none">
+      <input class="price-edit-input" id="price-edit-input" type="number" min="1" step="1" placeholder="Price">
+      <button class="price-edit-save" id="price-edit-save">Save</button>
+      <button class="price-edit-cancel" id="price-edit-cancel">Cancel</button>
+      <span class="price-edit-error" id="price-edit-error"></span>
+    </div>
     <div class="detail-model">${escapeHtml(key || '—')}</div>
     <dl class="detail-grid">
       ${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(String(v))}</dd>`).join('')}
@@ -626,8 +633,49 @@ function openDealDetail(id) {
     });
   });
 
+  const editBox = document.getElementById('price-edit');
+  document.getElementById('price-edit-btn').addEventListener('click', () => {
+    document.getElementById('price-edit-input').value = d.price > 0 ? d.price : '';
+    document.getElementById('price-edit-error').textContent = '';
+    editBox.style.display = 'flex';
+    document.getElementById('price-edit-input').focus();
+  });
+  document.getElementById('price-edit-cancel').addEventListener('click', () => {
+    editBox.style.display = 'none';
+  });
+  document.getElementById('price-edit-save').addEventListener('click', () => saveDealPrice(d.id));
+  document.getElementById('price-edit-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveDealPrice(d.id);
+  });
+
   renderTrendPanel();
   document.getElementById('deal-modal').style.display = 'flex';
+}
+
+/* Manually set a listing's price (parser misses, no Claude fallback shipped). PATCHes the
+   deal, then re-renders the modal + table so the new price and recomputed 🔥 show. */
+async function saveDealPrice(id) {
+  const errEl = document.getElementById('price-edit-error');
+  const price = Number(document.getElementById('price-edit-input').value);
+  if (!Number.isFinite(price) || price <= 0) {
+    errEl.textContent = 'Enter a positive number';
+    return;
+  }
+  const res = await fetch(`/api/deals/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ price }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    errEl.textContent = err.error || `Save failed (${res.status})`;
+    return;
+  }
+  const updated = await res.json();
+  const deal = allDeals.find((x) => String(x.id) === String(id));
+  if (deal) { deal.price = updated.price; deal.is_hot = updated.is_hot; }
+  render();            // refresh the table/cards behind the modal
+  openDealDetail(id);  // re-render the modal with the new price + hot state
 }
 
 /* Render the chart for the current trendState (deal + series + selected range). */
