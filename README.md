@@ -52,7 +52,7 @@ REDDIT_PASSWORD=...
 ```
 
 Provisioning steps, access (Tailscale SSH / IAP), and the operational runbook live in
-`VM_MIGRATION.md` and `HANDOVER.md` — local, gitignored, not shipped in the repo.
+`HANDOVER.md` — local, gitignored, not shipped in the repo.
 
 ## Running locally
 
