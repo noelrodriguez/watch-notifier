@@ -327,6 +327,21 @@ td { padding: 9px 12px 9px 0; vertical-align: middle; }
    No-Display rule (DESIGN.md), kept modest at 18px. */
 .detail-price { font-size: 18px; font-weight: 600; margin: 2px 0; }
 .detail-model { color: #c9a84c; font-size: 11px; letter-spacing: 1px; margin-bottom: 14px; }
+
+/* Inline manual price editor (detail view) */
+.price-edit-btn { background: transparent; border: none; color: #555; cursor: pointer;
+  font-size: 13px; padding: 0 4px; vertical-align: middle; transition: color 0.15s; }
+.price-edit-btn:hover { color: #c9a84c; }
+.price-edit { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; }
+.price-edit-input { width: 110px; background: #111120; border: 1px solid #252535; color: #c0b89a;
+  font-size: 13px; padding: 6px 8px; border-radius: 4px; outline: none; }
+.price-edit-input:focus { border-color: #c9a84c44; }
+.price-edit-save { background: #c9a84c; color: #07070d; border: none; font-weight: 600;
+  padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+.price-edit-cancel { background: transparent; color: #888; border: 1px solid #252535;
+  padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+.price-edit-cancel:hover { border-color: #c9a84c44; color: #c9a84c; }
+.price-edit-error { color: #f1b0b0; font-size: 11px; }
 .detail-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 0 16px; }
 .detail-grid dt { color: #777; font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
   align-self: center; }

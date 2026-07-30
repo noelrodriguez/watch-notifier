@@ -194,5 +194,37 @@ def delete_deal(deal_id):
     return jsonify({"ok": True}), 200
 
 
+def _recompute_is_hot(deal):
+    """Hot iff the price is at/under the matched watch's ceiling — same rule as the
+    monitor's tag_deal. The deal is already tagged, so match by its brand+model slug
+    (the watch id) rather than re-parsing the title. Unmatched / no ceiling → not hot."""
+    brand, model = deal.get("brand"), deal.get("model")
+    price = deal.get("price")
+    if not brand or not model or price is None:
+        return False
+    watch = next((w for w in _load_watches()
+                  if w.get("id") == _slugify(brand, model)), None)
+    ceiling = (watch or {}).get("price_ceiling") or float("inf")
+    return price <= ceiling
+
+
+@app.route("/api/deals/<deal_id>", methods=["PATCH"])
+def update_deal_price(deal_id):
+    """Manually set a listing's price (for deals the parser never recovered). Recomputes
+    the 🔥 hot flag against the watch's ceiling so a hand-fixed cheap listing flags."""
+    payload = request.get_json(silent=True) or {}
+    price = payload.get("price")
+    if isinstance(price, bool) or not isinstance(price, (int, float)) or price <= 0:
+        return jsonify({"error": "price must be a positive number"}), 400
+    deals = _load_deals()
+    deal = next((d for d in deals if d.get("id") == deal_id), None)
+    if deal is None:
+        return jsonify({"error": "not found"}), 404
+    deal["price"] = price
+    deal["is_hot"] = _recompute_is_hot(deal)
+    _save_deals(deals)
+    return jsonify(deal), 200
+
+
 if __name__ == "__main__":
     app.run(port=5000, debug=True)

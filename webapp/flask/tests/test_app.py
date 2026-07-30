@@ -191,3 +191,51 @@ def test_delete_deal_not_found(client, tmp_path):
         r = client.delete("/api/deals/nonexistent")
     assert r.status_code == 404
     assert "not found" in json.loads(r.data)["error"]
+
+
+def test_update_deal_price_recomputes_hot(client, tmp_path):
+    """A hand-set price at/under the watch ceiling flags the deal hot."""
+    deals = [{"id": "reddit:1uex7dl", "title": "Longines Master Moonphase",
+              "brand": "Longines", "model": "Master Collection Chrono Moonphase",
+              "price": -1, "is_hot": False}]
+    watches = [{"id": "longines-master-collection-chrono-moonphase",
+                "brand": "Longines", "model": "Master Collection Chrono Moonphase",
+                "price_ceiling": 2000}]
+    (tmp_path / "deals.json").write_text(json.dumps(deals))
+    (tmp_path / "watches.json").write_text(json.dumps(watches))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.patch("/api/deals/reddit%3A1uex7dl", json={"price": 1800})
+    assert r.status_code == 200
+    body = json.loads(r.data)
+    assert body["price"] == 1800
+    assert body["is_hot"] is True
+    saved = json.loads((tmp_path / "deals.json").read_text())
+    assert saved[0]["price"] == 1800 and saved[0]["is_hot"] is True
+
+
+def test_update_deal_price_above_ceiling_not_hot(client, tmp_path):
+    deals = [{"id": "reddit:x", "brand": "Longines", "model": "Master Collection Chrono Moonphase",
+              "price": None, "is_hot": False}]
+    watches = [{"id": "longines-master-collection-chrono-moonphase",
+                "brand": "Longines", "model": "Master Collection Chrono Moonphase",
+                "price_ceiling": 2000}]
+    (tmp_path / "deals.json").write_text(json.dumps(deals))
+    (tmp_path / "watches.json").write_text(json.dumps(watches))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.patch("/api/deals/reddit%3Ax", json={"price": 2500})
+    assert json.loads(r.data)["is_hot"] is False
+
+
+def test_update_deal_price_invalid(client, tmp_path):
+    (tmp_path / "deals.json").write_text(json.dumps([{"id": "reddit:x"}]))
+    with patch("app.DATA_DIR", tmp_path):
+        for bad in ({"price": 0}, {"price": -5}, {"price": "1800"}, {}):
+            r = client.patch("/api/deals/reddit%3Ax", json=bad)
+            assert r.status_code == 400
+
+
+def test_update_deal_price_not_found(client, tmp_path):
+    (tmp_path / "deals.json").write_text(json.dumps([{"id": "reddit:x"}]))
+    with patch("app.DATA_DIR", tmp_path):
+        r = client.patch("/api/deals/nope", json={"price": 1800})
+    assert r.status_code == 404
